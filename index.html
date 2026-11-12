@@ -9,7 +9,7 @@
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   <script type="text/javascript">
     (function() {
-      emailjs.init("TU_PUBLIC_KEY");
+      emailjs.init("HhTaoxZGy2zC2YXSI");
     })();
   </script>
 
@@ -41,12 +41,12 @@
     .tab { flex: 1; padding: 15px 20px; text-align: center; cursor: pointer; font-weight: bold; font-size: 16px; color: #7f8c8d; background: #ecf0f1; border: none; transition: all 0.2s; }
     .tab:hover { background: #d5dbdb; color: #2c3e50; }
     .tab.active { background: #3498db; color: white; }
+    .tab.hidden { display: none; }
     .tab-content { display: none; background: white; padding: 20px; border-radius: 0 0 8px 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
     .tab-content.active { display: block; }
 
     main { max-width: 1400px; margin: 0 auto; padding: 0 20px 20px 20px; }
     
-    /* Layout con sidebar para estado */
     .solicitar-container {
       display: grid;
       grid-template-columns: 300px 1fr;
@@ -72,58 +72,20 @@
       padding-bottom: 8px;
     }
     
-    .estado-item {
-      padding: 12px;
-      margin: 8px 0;
-      border-radius: 6px;
-      border-left: 4px solid;
-    }
+    .estado-item { padding: 12px; margin: 8px 0; border-radius: 6px; border-left: 4px solid; }
+    .estado-item.pendiente { background: #fef9e7; border-left-color: #f39c12; }
+    .estado-item.aprobada { background: #d5f4e6; border-left-color: #27ae60; }
+    .estado-item.rechazada { background: #fdedec; border-left-color: #e74c3c; }
     
-    .estado-item.pendiente {
-      background: #fef9e7;
-      border-left-color: #f39c12;
-    }
-    
-    .estado-item.aprobada {
-      background: #d5f4e6;
-      border-left-color: #27ae60;
-    }
-    
-    .estado-item.rechazada {
-      background: #fdedec;
-      border-left-color: #e74c3c;
-    }
-    
-    .estado-item .titulo {
-      font-weight: bold;
-      font-size: 13px;
-      margin-bottom: 4px;
-    }
-    
-    .estado-item .fechas {
-      font-size: 12px;
-      color: #7f8c8d;
-    }
-    
+    .estado-item .titulo { font-weight: bold; font-size: 13px; margin-bottom: 4px; }
+    .estado-item .fechas { font-size: 12px; color: #7f8c8d; }
     .estado-item .estado-badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: 10px;
-      font-weight: bold;
-      margin-top: 4px;
+      display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; margin-top: 4px;
     }
-    
     .estado-badge.pendiente { background: #f39c12; color: white; }
     .estado-badge.aprobada { background: #27ae60; color: white; }
     .estado-badge.rechazada { background: #e74c3c; color: white; }
-    
-    .sin-estado {
-      text-align: center;
-      color: #95a5a6;
-      font-style: italic;
-      padding: 20px;
-    }
+    .sin-estado { text-align: center; color: #95a5a6; font-style: italic; padding: 20px; }
 
     section { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     h2 { color: #2c3e50; margin-bottom: 15px; }
@@ -247,15 +209,6 @@
     .botones-accion { display: flex; gap: 10px; margin-top: 15px; }
     .botones-accion button { flex: 1; }
 
-    #solicitudes { list-style: none; }
-    #solicitudes li { padding: 10px; margin: 5px 0; background: #f8f9fa; border-left: 4px solid #27ae60; border-radius: 4px; }
-    #solicitudes li.ordenanza { border-left-color: #e74c3c; }
-    #solicitudes li.limpieza { border-left-color: #3498db; }
-    #solicitudes li.pendiente { border-left-color: #f39c12; background: #fef9e7; }
-    #solicitudes li.aprobada { border-left-color: #27ae60; }
-    #solicitudes li.rechazada { border-left-color: #e74c3c; background: #fdedec; }
-    #solicitudes li .estado-sol { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; margin-left: 8px; }
-
     @media (max-width: 900px) { 
       .calendario-4x3 { grid-template-columns: repeat(2, 1fr); }
       .solicitar-container { grid-template-columns: 1fr; }
@@ -269,7 +222,7 @@
 </head>
 <body>
   <div id="login-screen" class="login-container">
-    <h1> Vacaciones Pabellón Niño Jesús</h1>
+    <h1>🏢 Vacaciones Pabellón Niño Jesús</h1>
     <p>Selecciona tu nombre e introduce tu contraseña</p>
     <select id="selector-usuario"><option value="">-- Selecciona tu nombre --</option></select>
     <input type="password" id="input-password" placeholder="Contraseña">
@@ -291,25 +244,32 @@
 
     <div class="tabs-container">
       <div class="tabs">
-        <button class="tab active" data-tab="solicitar">📝 Solicitar vacaciones</button>
-        <button class="tab" data-tab="calendario">📅 Calendario</button>
+        <button class="tab hidden" data-tab="admin" id="tab-btn-admin">⚙️ Administración</button>
+        <button class="tab" data-tab="solicitar" id="tab-btn-solicitar">📝 Solicitar vacaciones</button>
+        <button class="tab" data-tab="calendario" id="tab-btn-calendario">📅 Calendario</button>
       </div>
 
-      <div class="tab-content active" id="tab-solicitar">
-        <section id="panel-admin" style="display:none;">
+      <!-- PESTAÑA: ADMINISTRACIÓN -->
+      <div class="tab-content" id="tab-admin">
+        <section>
           <h2>⚙️ Panel de Administración</h2>
+          
           <div class="notificaciones-panel">
-            <h3> Solicitudes pendientes <span class="badge-notif" id="badge-notif">0</span></h3>
+            <h3>🔔 Solicitudes pendientes <span class="badge-notif" id="badge-notif">0</span></h3>
             <div id="lista-notificaciones"></div>
           </div>
+
           <h3>Estado de empleados</h3>
           <div id="lista-estados"></div>
+          
           <h3>Rotación anual (limpieza)</h3>
           <button id="btn-rotar">Avanzar orden para el próximo año</button>
         </section>
+      </div>
 
+      <!-- PESTAÑA: SOLICITAR VACACIONES -->
+      <div class="tab-content" id="tab-solicitar">
         <div class="solicitar-container">
-          <!-- Sidebar de estado -->
           <div class="estado-sidebar">
             <h3>📋 Estado de solicitudes</h3>
             <div id="sidebar-estado">
@@ -317,7 +277,6 @@
             </div>
           </div>
 
-          <!-- Formulario y calendario -->
           <section>
             <h2>Solicitar vacaciones</h2>
             <div id="info-turno"></div>
@@ -352,6 +311,7 @@
         </div>
       </div>
 
+      <!-- PESTAÑA: CALENDARIO -->
       <div class="tab-content" id="tab-calendario">
         <section>
           <h2>📊 Vista general de vacaciones 2027</h2>
@@ -440,7 +400,6 @@
       return h;
     }
 
-    // ✅ Función mejorada para calcular días naturales (incluye todos los días)
     function calcularDiasNaturales(inicio, fin) {
       const fi = new Date(inicio);
       const ff = new Date(fin);
@@ -487,11 +446,14 @@
     function validarSolicitud(empleadoId, inicio, fin, excluirVentanaId = null) {
       const empleados = cargarEmpleados();
       const empleado = empleados.find(e => e.id === empleadoId);
+      
       if (!empleado) return { ok: false, msg: 'Empleado no reconocido' };
-      if (empleado.estado === 'baja') return { ok: false, msg: 'Este empleado está de baja' };
+      if (empleado.estado === 'baja') {
+        return { ok: false, msg: `❌ ${empleado.nombre} está de baja. No se pueden solicitar vacaciones.` };
+      }
 
       if (inicio < CONFIG.periodoVacaciones.inicio || fin > CONFIG.periodoVacaciones.fin) {
-        return { ok: false, msg: ` Las vacaciones deben estar entre el ${formatearFecha(new Date(CONFIG.periodoVacaciones.inicio))} y el ${formatearFecha(new Date(CONFIG.periodoVacaciones.fin))}` };
+        return { ok: false, msg: `❌ Las vacaciones deben estar entre el ${formatearFecha(new Date(CONFIG.periodoVacaciones.inicio))} y el ${formatearFecha(new Date(CONFIG.periodoVacaciones.fin))}` };
       }
 
       const diasN = calcularDiasNaturales(inicio, fin);
@@ -566,6 +528,31 @@
     }
 
     function inicializarTabs() {
+      const tabAdmin = document.getElementById('tab-btn-admin');
+      if (usuarioActual.rol === 'admin') {
+        tabAdmin.classList.remove('hidden');
+      } else {
+        tabAdmin.classList.add('hidden');
+      }
+
+      const pestañaPorDefecto = usuarioActual.rol === 'admin' ? 'admin' : 'solicitar';
+
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      
+      document.getElementById(`tab-btn-${pestañaPorDefecto}`).classList.add('active');
+      document.getElementById(`tab-${pestañaPorDefecto}`).classList.add('active');
+
+      if (pestañaPorDefecto === 'admin') {
+        inicializarPanelAdmin();
+        renderizarNotificaciones();
+      } else {
+        renderizarCalendarioInteractivo();
+        renderizarInfoDias();
+        renderizarSidebarEstado();
+      }
+      renderizarCalendario4x3();
+
       document.querySelectorAll('.tab').forEach(tab => {
         tab.addEventListener('click', () => {
           document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -573,12 +560,16 @@
           tab.classList.add('active');
           const tabId = tab.getAttribute('data-tab');
           document.getElementById(`tab-${tabId}`).classList.add('active');
-          if (tabId === 'calendario') { renderizarCalendario4x3(); }
-          if (tabId === 'solicitar') { 
-            renderizarCalendarioInteractivo(); 
-            renderizarInfoDias(); 
+          
+          if (tabId === 'admin') {
+            inicializarPanelAdmin();
+            renderizarNotificaciones();
+          } else if (tabId === 'solicitar') {
+            renderizarCalendarioInteractivo();
+            renderizarInfoDias();
             renderizarSidebarEstado();
-            if (usuarioActual.rol === 'admin') renderizarNotificaciones();
+          } else if (tabId === 'calendario') {
+            renderizarCalendario4x3();
           }
         });
       });
@@ -595,36 +586,28 @@
       document.getElementById('user-info').innerHTML = `👤 <strong>${usuarioActual.nombre}</strong> (${usuarioActual.gremio})`;
       document.getElementById('btn-salir').onclick = cerrarSesion;
 
-      if (usuarioActual.rol === 'admin') {
-        document.getElementById('panel-admin').style.display = 'block';
-        inicializarPanelAdmin();
-        renderizarNotificaciones();
-      } else {
-        document.getElementById('panel-admin').style.display = 'none';
-      }
-
       configurarFormulario();
 
       if (usuarioActual.gremio === 'limpieza') {
         const infoDiv = document.getElementById('info-turno');
         const turno = obtenerTurnoActualLimpieza();
         if (turno) {
-          infoDiv.innerHTML = `<div class="info"> <strong>Turno actual:</strong> ${turno.nombre} (prioridad ${turno.prioridad}º). ${turno.id === usuarioActual.id ? '¡Es tu turno!' : 'Espera tu turno.'}</div>`;
+          infoDiv.innerHTML = `<div class="info">🎯 <strong>Turno actual:</strong> ${turno.nombre} (prioridad ${turno.prioridad}º). ${turno.id === usuarioActual.id ? '¡Es tu turno!' : 'Espera tu turno.'}</div>`;
         }
       } else {
         document.getElementById('info-turno').innerHTML = '';
       }
 
-      renderizarInfoDias();
-      renderizarCalendarioInteractivo();
-      renderizarCalendario4x3();
-      renderizarSidebarEstado();
+      inicializarTabs();
     }
 
-    // ✅ Renderizar sidebar de estado
     function renderizarSidebarEstado() {
       const cont = document.getElementById('sidebar-estado');
+      const empleados = cargarEmpleados();
+      
       const solicitudes = cargarSolicitudes().filter(s => {
+        const emp = empleados.find(e => e.id === s.empleadoId);
+        if (!emp || emp.estado !== 'activo') return false;
         if (usuarioActual.rol === 'admin') return true;
         return s.empleadoId === usuarioActual.id;
       });
@@ -634,7 +617,6 @@
         return;
       }
 
-      const empleados = cargarEmpleados();
       cont.innerHTML = '';
 
       solicitudes.forEach(s => {
@@ -648,9 +630,9 @@
         item.className = `estado-item ${s.estado}`;
         
         let estadoTexto = '';
-        if (s.estado === 'pendiente') estadoTexto = ' Pendiente';
+        if (s.estado === 'pendiente') estadoTexto = '⏳ Pendiente';
         else if (s.estado === 'aprobada') estadoTexto = '✅ Aprobada';
-        else if (s.estado === 'rechazada') estadoTexto = ' Rechazada';
+        else if (s.estado === 'rechazada') estadoTexto = '❌ Rechazada';
 
         item.innerHTML = `
           <div class="titulo">${emp.nombre.split(' ').slice(0,2).join(' ')}</div>
@@ -667,7 +649,12 @@
       const badge = document.getElementById('badge-notif');
       cont.innerHTML = '';
 
-      const pendientes = cargarSolicitudes().filter(s => s.estado === 'pendiente');
+      const empleados = cargarEmpleados();
+      
+      const pendientes = cargarSolicitudes().filter(s => {
+        const emp = empleados.find(e => e.id === s.empleadoId);
+        return s.estado === 'pendiente' && emp && emp.estado === 'activo';
+      });
       
       if (pendientes.length === 0) {
         cont.innerHTML = '<div class="sin-notificaciones">✅ No hay solicitudes pendientes</div>';
@@ -678,8 +665,6 @@
       badge.textContent = pendientes.length;
       badge.classList.add('visible');
 
-      const empleados = cargarEmpleados();
-
       pendientes.forEach(p => {
         const emp = empleados.find(e => e.id === p.empleadoId);
         if (!emp) return;
@@ -687,7 +672,7 @@
         const item = document.createElement('div');
         item.className = 'notificacion-item';
         item.innerHTML = `
-          <div class="info-notif"> ${emp.nombre} (${emp.gremio})</div>
+          <div class="info-notif">👤 ${emp.nombre} (${emp.gremio})</div>
           <div class="fechas-notif">📅 ${formatearFecha(new Date(p.inicio))} - ${formatearFecha(new Date(p.fin))} (${calcularDiasHabiles(p.inicio, p.fin)} días hábiles)</div>
           <div class="acciones-notif">
             <button class="aprobar" onclick="aprobarSolicitud('${p.id}')">✅ Aprobar</button>
@@ -739,7 +724,7 @@
         renderizarInfoDias();
         renderizarCalendario4x3();
         renderizarSidebarEstado();
-        alert(' Solicitud rechazada');
+        alert('❌ Solicitud rechazada');
       }
     }
 
@@ -792,7 +777,7 @@
       if (limpieza.length > 0) {
         const sep = document.createElement('div');
         sep.className = 'gremio-separator';
-        sep.textContent = ' Servicio de Limpieza (orden de prioridad)';
+        sep.textContent = '🧹 Servicio de Limpieza (orden de prioridad)';
         grid.appendChild(sep);
 
         limpieza.forEach(emp => {
@@ -821,7 +806,6 @@
       }
     }
 
-    // ✅ Mostrar TODAS las solicitudes (pendientes, aprobadas, rechazadas) en el modal
     function abrirModalEmpleado(empleadoId) {
       const empleado = cargarEmpleados().find(e => e.id === empleadoId);
       if (!empleado) return;
@@ -1183,7 +1167,7 @@
         const diasNaturales = calcularDiasNaturales(diaInicio, diaFin);
         const diasHabiles = calcularDiasHabiles(diaInicio, diaFin);
         const mismoMes = diaInicio.getMonth() === diaFin.getMonth() && diaInicio.getFullYear() === diaFin.getFullYear();
-        const textoMes = mismoMes ? '' : `<br> <em>Selección entre ${nombresMes[diaInicio.getMonth()]} y ${nombresMes[diaFin.getMonth()]}</em>`;
+        const textoMes = mismoMes ? '' : `<br>📆 <em>Selección entre ${nombresMes[diaInicio.getMonth()]} y ${nombresMes[diaFin.getMonth()]}</em>`;
         
         r.innerHTML = `✅ <strong>Desde:</strong> ${inicioFormateada} <strong>Hasta:</strong> ${finFormateada}<br>📅 ${diasNaturales} días naturales (incluye fines de semana y festivos) | 💼 ${diasHabiles} días hábiles${textoMes}`;
         bg.style.display = 'inline-block'; bl.style.display = 'inline-block';
@@ -1240,7 +1224,7 @@
         solicitante: usuarioActual.nombre
       };
 
-      emailjs.send('TU_SERVICE_ID', 'TU_TEMPLATE_ID', templateParams)
+      emailjs.send('service_m8s780p', 'r89x3wr', templateParams)
         .then(function(response) {
            console.log('Email enviado con éxito!', response.status, response.text);
            m.textContent = `⏳ Solicitud registrada como PENDIENTE. Se ha enviado un aviso por email al administrador.`;
@@ -1272,7 +1256,14 @@
         const b = document.createElement('button');
         b.textContent = e.estado === 'activo' ? 'Poner de baja' : 'Reactivar';
         b.style.cssText = `background:${e.estado === 'activo' ? '#e74c3c' : '#27ae60'}; padding:6px 12px; font-size:12px; margin:0;`;
-        b.onclick = () => { e.estado = e.estado === 'activo' ? 'baja' : 'activo'; guardarEmpleados(cargarEmpleados()); renderizarListaEstados(); };
+        b.onclick = () => { 
+          e.estado = e.estado === 'activo' ? 'baja' : 'activo'; 
+          guardarEmpleados(cargarEmpleados()); 
+          renderizarListaEstados(); 
+          renderizarInfoDias();
+          renderizarNotificaciones();
+          renderizarSidebarEstado();
+        };
         d.appendChild(b);
         c.appendChild(d);
       });
@@ -1293,7 +1284,6 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       inicializarLogin();
-      inicializarTabs();
       const uid = sessionStorage.getItem('usuarioActual');
       if (uid) {
         usuarioActual = cargarEmpleados().find(e => e.id === uid);
