@@ -354,33 +354,20 @@
         const g = localStorage.getItem('empleados'); 
         return g ? JSON.parse(g) : JSON.parse(JSON.stringify(CONFIG.empleados));
       } catch(e) {
-        console.error('Error cargando empleados:', e);
         return JSON.parse(JSON.stringify(CONFIG.empleados));
       }
     }
     
     function guardarEmpleados(e) { 
-      try {
-        localStorage.setItem('empleados', JSON.stringify(e)); 
-      } catch(err) {
-        console.error('Error guardando empleados:', err);
-      }
+      try { localStorage.setItem('empleados', JSON.stringify(e)); } catch(err) { console.error(err); }
     }
     
     function cargarSolicitudes() { 
-      try {
-        return JSON.parse(localStorage.getItem('vacaciones') || '[]'); 
-      } catch(e) {
-        return [];
-      }
+      try { return JSON.parse(localStorage.getItem('vacaciones') || '[]'); } catch(e) { return []; }
     }
     
     function guardarSolicitudes(d) { 
-      try {
-        localStorage.setItem('vacaciones', JSON.stringify(d)); 
-      } catch(err) {
-        console.error('Error guardando solicitudes:', err);
-      }
+      try { localStorage.setItem('vacaciones', JSON.stringify(d)); } catch(err) { console.error(err); }
     }
 
     function esDiaNoLaborable(fecha) {
@@ -399,39 +386,23 @@
           if (!esDiaNoLaborable(d)) h++;
         }
         return h;
-      } catch(e) {
-        console.error('Error calculando días hábiles:', e);
-        return 0;
-      }
+      } catch(e) { return 0; }
     }
 
     function calcularDiasNaturales(inicio, fin) {
       try {
         const fi = new Date(inicio);
         const ff = new Date(fin);
-        const diffTime = Math.abs(ff - fi);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        return diffDays;
-      } catch(e) {
-        console.error('Error calculando días naturales:', e);
-        return 0;
-      }
+        return Math.ceil(Math.abs(ff - fi) / (1000 * 60 * 60 * 24)) + 1;
+      } catch(e) { return 0; }
     }
 
     function obtenerVentanasEmpleado(id) { 
-      try {
-        return cargarSolicitudes().filter(s => s.empleadoId === id && s.estado === 'aprobada'); 
-      } catch(e) {
-        return [];
-      }
+      try { return cargarSolicitudes().filter(s => s.empleadoId === id && s.estado === 'aprobada'); } catch(e) { return []; }
     }
 
     function calcularDiasUsados(id) { 
-      try {
-        return obtenerVentanasEmpleado(id).reduce((t, v) => t + calcularDiasHabiles(v.inicio, v.fin), 0); 
-      } catch(e) {
-        return 0;
-      }
+      try { return obtenerVentanasEmpleado(id).reduce((t, v) => t + calcularDiasHabiles(v.inicio, v.fin), 0); } catch(e) { return 0; }
     }
 
     function contarAusentesEnRango(gremio, inicio, fin, excluirId) {
@@ -450,77 +421,40 @@
           max = Math.max(max, aus);
         }
         return max;
-      } catch(e) {
-        console.error('Error contando ausentes:', e);
-        return 0;
-      }
+      } catch(e) { return 0; }
     }
 
-    function esPeriodoLibre(fechaInicio) {
-      return fechaInicio < CONFIG.fechaLimiteAbril;
-    }
+    function esPeriodoLibre(fechaInicio) { return fechaInicio < CONFIG.fechaLimiteAbril; }
 
     function obtenerTurnoActualLimpieza() {
       try {
-        const activos = cargarEmpleados()
-          .filter(e => e.gremio === 'limpieza' && e.estado === 'activo')
-          .sort((a, b) => a.prioridad - b.prioridad);
+        const activos = cargarEmpleados().filter(e => e.gremio === 'limpieza' && e.estado === 'activo').sort((a, b) => a.prioridad - b.prioridad);
         return activos.length > 0 ? activos[0] : null;
-      } catch(e) {
-        console.error('Error obteniendo turno:', e);
-        return null;
-      }
+      } catch(e) { return null; }
     }
 
     function validarSolicitud(empleadoId, inicio, fin, excluirVentanaId = null) {
       try {
         const empleados = cargarEmpleados();
         const empleado = empleados.find(e => e.id === empleadoId);
-        
         if (!empleado) return { ok: false, msg: 'Empleado no reconocido' };
-        if (empleado.estado === 'baja') {
-          return { ok: false, msg: `❌ ${empleado.nombre} está de baja. No se pueden solicitar vacaciones.` };
-        }
-
-        if (inicio < CONFIG.periodoVacaciones.inicio || fin > CONFIG.periodoVacaciones.fin) {
-          return { ok: false, msg: `❌ Las vacaciones deben estar entre el ${formatearFecha(new Date(CONFIG.periodoVacaciones.inicio))} y el ${formatearFecha(new Date(CONFIG.periodoVacaciones.fin))}` };
-        }
-
+        if (empleado.estado === 'baja') return { ok: false, msg: `❌ ${empleado.nombre} está de baja.` };
+        if (inicio < CONFIG.periodoVacaciones.inicio || fin > CONFIG.periodoVacaciones.fin) return { ok: false, msg: '❌ Fuera del periodo de vacaciones' };
         const diasN = calcularDiasNaturales(inicio, fin);
-        if (diasN < CONFIG.minimoDiasNaturales) {
-          return { ok: false, msg: `❌ Mínimo ${CONFIG.minimoDiasNaturales} días naturales (seleccionados: ${diasN}). Incluye fines de semana y festivos.` };
-        }
-
+        if (diasN < CONFIG.minimoDiasNaturales) return { ok: false, msg: `❌ Mínimo ${CONFIG.minimoDiasNaturales} días naturales` };
         const ventanasActuales = obtenerVentanasEmpleado(empleadoId).filter(v => v.id !== excluirVentanaId);
-        if (ventanasActuales.length >= CONFIG.maximoVentanas) {
-          return { ok: false, msg: `❌ Ya has usado las ${CONFIG.maximoVentanas} ventanas disponibles` };
-        }
-
-        const diasUsadosExcl = excluirVentanaId 
-          ? calcularDiasUsados(empleadoId) - (calcularDiasHabiles(ventanasActuales.find(v => v.id === excluirVentanaId)?.inicio || '2027-01-01', ventanasActuales.find(v => v.id === excluirVentanaId)?.fin || '2027-01-01'))
-          : calcularDiasUsados(empleadoId);
+        if (ventanasActuales.length >= CONFIG.maximoVentanas) return { ok: false, msg: '❌ Máximo de ventanas alcanzado' };
+        const diasUsadosExcl = excluirVentanaId ? calcularDiasUsados(empleadoId) - (calcularDiasHabiles(ventanasActuales.find(v => v.id === excluirVentanaId)?.inicio || '2027-01-01', ventanasActuales.find(v => v.id === excluirVentanaId)?.fin || '2027-01-01')) : calcularDiasUsados(empleadoId);
         const diasNuevos = calcularDiasHabiles(inicio, fin);
-        if (diasUsadosExcl + diasNuevos > empleado.diasDisponibles) {
-          return { ok: false, msg: `❌ Días insuficientes. Usados: ${diasUsadosExcl}, Disponibles: ${empleado.diasDisponibles}, Solicitados: ${diasNuevos}` };
-        }
-
+        if (diasUsadosExcl + diasNuevos > empleado.diasDisponibles) return { ok: false, msg: '❌ Días insuficientes' };
         if (empleado.gremio === 'limpieza' && !esPeriodoLibre(inicio)) {
           const turno = obtenerTurnoActualLimpieza();
-          if (turno && turno.id !== empleadoId) {
-            return { ok: false, msg: `❌ No es tu turno. Le corresponde pedir a ${turno.nombre} (prioridad ${turno.prioridad}º). El orden de prioridad se aplica desde el 1 de abril.` };
-          }
+          if (turno && turno.id !== empleadoId) return { ok: false, msg: `❌ No es tu turno. Le corresponde a ${turno.nombre}` };
         }
-
         const aus = contarAusentesEnRango(empleado.gremio, inicio, fin, empleadoId);
-        if (aus >= CONFIG.reglas[empleado.gremio].maxAusentes) {
-          return { ok: false, msg: `❌ Ya hay ${aus} personas de ${empleado.gremio} fuera. Máximo: ${CONFIG.reglas[empleado.gremio].maxAusentes}` };
-        }
-
+        if (aus >= CONFIG.reglas[empleado.gremio].maxAusentes) return { ok: false, msg: `❌ Máximo de ausentes alcanzado` };
         return { ok: true };
-      } catch(e) {
-        console.error('Error validando solicitud:', e);
-        return { ok: false, msg: 'Error al validar la solicitud' };
-      }
+      } catch(e) { return { ok: false, msg: 'Error al validar' }; }
     }
 
     function inicializarLogin() {
@@ -530,7 +464,6 @@
         opt.value = emp.id; opt.textContent = emp.nombre;
         select.appendChild(opt);
       });
-
       document.getElementById('btn-acceder').addEventListener('click', () => {
         const userId = select.value;
         const password = document.getElementById('input-password').value;
@@ -563,28 +496,17 @@
 
     function inicializarTabs() {
       const tabAdmin = document.getElementById('tab-btn-admin');
-      if (usuarioActual.rol === 'admin') {
-        tabAdmin.classList.remove('hidden');
-      } else {
-        tabAdmin.classList.add('hidden');
-      }
+      if (usuarioActual.rol === 'admin') tabAdmin.classList.remove('hidden');
+      else tabAdmin.classList.add('hidden');
 
       const pestañaPorDefecto = usuarioActual.rol === 'admin' ? 'admin' : 'solicitar';
-
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      
       document.getElementById(`tab-btn-${pestañaPorDefecto}`).classList.add('active');
       document.getElementById(`tab-${pestañaPorDefecto}`).classList.add('active');
 
-      if (pestañaPorDefecto === 'admin') {
-        inicializarPanelAdmin();
-        renderizarNotificaciones();
-      } else {
-        renderizarCalendarioInteractivo();
-        renderizarInfoDias();
-        renderizarSidebarEstado();
-      }
+      if (pestañaPorDefecto === 'admin') { inicializarPanelAdmin(); renderizarNotificaciones(); }
+      else { renderizarCalendarioInteractivo(); renderizarInfoDias(); renderizarSidebarEstado(); }
       renderizarCalendario4x3();
 
       document.querySelectorAll('.tab').forEach(tab => {
@@ -594,24 +516,15 @@
           tab.classList.add('active');
           const tabId = tab.getAttribute('data-tab');
           document.getElementById(`tab-${tabId}`).classList.add('active');
-          
-          if (tabId === 'admin') {
-            inicializarPanelAdmin();
-            renderizarNotificaciones();
-          } else if (tabId === 'solicitar') {
-            renderizarCalendarioInteractivo();
-            renderizarInfoDias();
-            renderizarSidebarEstado();
-          } else if (tabId === 'calendario') {
-            renderizarCalendario4x3();
-          }
+          if (tabId === 'admin') { inicializarPanelAdmin(); renderizarNotificaciones(); }
+          else if (tabId === 'solicitar') { renderizarCalendarioInteractivo(); renderizarInfoDias(); renderizarSidebarEstado(); }
+          else if (tabId === 'calendario') renderizarCalendario4x3();
         });
       });
     }
 
     function actualizarInterfaz() {
       if (!usuarioActual) return;
-
       const subtitulo = document.getElementById('subtitulo-gremio');
       if (usuarioActual.rol === 'admin') subtitulo.textContent = '👥 Ordenanzas y Servicio de Limpieza';
       else if (usuarioActual.gremio === 'ordenanzas') subtitulo.textContent = '👥 Ordenanzas';
@@ -619,18 +532,12 @@
 
       document.getElementById('user-info').innerHTML = `👤 <strong>${usuarioActual.nombre}</strong> (${usuarioActual.gremio})`;
       document.getElementById('btn-salir').onclick = cerrarSesion;
-
       configurarFormulario();
 
       if (usuarioActual.gremio === 'limpieza') {
-        const infoDiv = document.getElementById('info-turno');
         const turno = obtenerTurnoActualLimpieza();
-        if (turno) {
-          infoDiv.innerHTML = `<div class="info">🎯 <strong>Turno actual:</strong> ${turno.nombre} (prioridad ${turno.prioridad}º). ${turno.id === usuarioActual.id ? '¡Es tu turno!' : 'Espera tu turno.'}</div>`;
-        }
-      } else {
-        document.getElementById('info-turno').innerHTML = '';
-      }
+        if (turno) document.getElementById('info-turno').innerHTML = `<div class="info">🎯 <strong>Turno actual:</strong> ${turno.nombre} (prioridad ${turno.prioridad}º). ${turno.id === usuarioActual.id ? '¡Es tu turno!' : 'Espera tu turno.'}</div>`;
+      } else document.getElementById('info-turno').innerHTML = '';
 
       inicializarTabs();
     }
@@ -639,56 +546,29 @@
       try {
         const cont = document.getElementById('sidebar-estado');
         if (!cont) return;
-        
         const empleados = cargarEmpleados();
-        
         const solicitudes = cargarSolicitudes().filter(s => {
           const emp = empleados.find(e => e.id === s.empleadoId);
           if (!emp || emp.estado !== 'activo') return false;
           if (usuarioActual.rol === 'admin') return true;
           return s.empleadoId === usuarioActual.id;
         });
-
-        if (solicitudes.length === 0) {
-          cont.innerHTML = '<div class="sin-estado">No hay solicitudes</div>';
-          return;
-        }
-
+        if (solicitudes.length === 0) { cont.innerHTML = '<div class="sin-estado">No hay solicitudes</div>'; return; }
         cont.innerHTML = '';
-
         solicitudes.forEach(s => {
           const emp = empleados.find(e => e.id === s.empleadoId);
           if (!emp) return;
-
           const diasHabiles = calcularDiasHabiles(s.inicio, s.fin);
           const diasNaturales = calcularDiasNaturales(s.inicio, s.fin);
-
           const item = document.createElement('div');
           item.className = `estado-item ${s.estado}`;
-          
-          let estadoTexto = '';
-          if (s.estado === 'pendiente') estadoTexto = '⏳ Pendiente';
-          else if (s.estado === 'aprobada') estadoTexto = '✅ Aprobada';
-          else if (s.estado === 'rechazada') estadoTexto = '❌ Rechazada';
-
-          // ✅ Mostrar motivo si está rechazada
+          let estadoTexto = s.estado === 'pendiente' ? '⏳ Pendiente' : s.estado === 'aprobada' ? '✅ Aprobada' : '❌ Rechazada';
           let razonHtml = '';
-          if (s.estado === 'rechazada' && s.razonRechazo) {
-            razonHtml = `<div style="margin-top:6px; padding:6px; background:#fadbd8; border-radius:4px; font-size:11px; color:#c0392b;"><strong>Motivo:</strong> ${s.razonRechazo}</div>`;
-          }
-
-          item.innerHTML = `
-            <div class="titulo">${emp.nombre.split(' ').slice(0,2).join(' ')}</div>
-            <div class="fechas">${formatearFecha(new Date(s.inicio))} - ${formatearFecha(new Date(s.fin))}</div>
-            <div class="fechas">${diasHabiles} días hábiles | ${diasNaturales} naturales</div>
-            <span class="estado-badge ${s.estado}">${estadoTexto}</span>
-            ${razonHtml}
-          `;
+          if (s.estado === 'rechazada' && s.razonRechazo) razonHtml = `<div style="margin-top:6px; padding:6px; background:#fadbd8; border-radius:4px; font-size:11px; color:#c0392b;"><strong>Motivo:</strong> ${s.razonRechazo}</div>`;
+          item.innerHTML = `<div class="titulo">${emp.nombre.split(' ').slice(0,2).join(' ')}</div><div class="fechas">${formatearFecha(new Date(s.inicio))} - ${formatearFecha(new Date(s.fin))}</div><div class="fechas">${diasHabiles} días hábiles | ${diasNaturales} naturales</div><span class="estado-badge ${s.estado}">${estadoTexto}</span>${razonHtml}`;
           cont.appendChild(item);
         });
-      } catch(e) {
-        console.error('Error en renderizarSidebarEstado:', e);
-      }
+      } catch(e) { console.error('Error en renderizarSidebarEstado:', e); }
     }
 
     function renderizarNotificaciones() {
@@ -696,65 +576,29 @@
         const cont = document.getElementById('lista-notificaciones');
         const badge = document.getElementById('badge-notif');
         if (!cont || !badge) return;
-        
         cont.innerHTML = '';
-
         const empleados = cargarEmpleados();
-        
-        const pendientes = cargarSolicitudes().filter(s => {
-          const emp = empleados.find(e => e.id === s.empleadoId);
-          return s.estado === 'pendiente' && emp && emp.estado === 'activo';
-        });
-        
-        if (pendientes.length === 0) {
-          cont.innerHTML = '<div class="sin-notificaciones">✅ No hay solicitudes pendientes</div>';
-          badge.classList.remove('visible');
-          return;
-        }
-
+        const pendientes = cargarSolicitudes().filter(s => { const emp = empleados.find(e => e.id === s.empleadoId); return s.estado === 'pendiente' && emp && emp.estado === 'activo'; });
+        if (pendientes.length === 0) { cont.innerHTML = '<div class="sin-notificaciones">✅ No hay solicitudes pendientes</div>'; badge.classList.remove('visible'); return; }
         badge.textContent = pendientes.length;
         badge.classList.add('visible');
-
         pendientes.forEach(p => {
           const emp = empleados.find(e => e.id === p.empleadoId);
           if (!emp) return;
-
           const item = document.createElement('div');
           item.className = 'notificacion-item';
-          item.innerHTML = `
-            <div class="info-notif">👤 ${emp.nombre} (${emp.gremio})</div>
-            <div class="fechas-notif">📅 ${formatearFecha(new Date(p.inicio))} - ${formatearFecha(new Date(p.fin))} (${calcularDiasHabiles(p.inicio, p.fin)} días hábiles)</div>
-            <div class="acciones-notif">
-              <button class="aprobar" onclick="aprobarSolicitud('${p.id}')">✅ Aprobar</button>
-              <button class="rechazar" onclick="mostrarRazonRechazo('${p.id}')">❌ Rechazar</button>
-            </div>
-            <input type="text" class="razon-input" id="razon-${p.id}" placeholder="Motivo del rechazo (obligatorio)" style="display:none;">
-            <button class="rechazar" id="btn-confirmar-rechazo-${p.id}" style="display:none; margin-top:8px;" onclick="rechazarSolicitud('${p.id}')">Confirmar rechazo</button>
-          `;
+          item.innerHTML = `<div class="info-notif">👤 ${emp.nombre} (${emp.gremio})</div><div class="fechas-notif">📅 ${formatearFecha(new Date(p.inicio))} - ${formatearFecha(new Date(p.fin))} (${calcularDiasHabiles(p.inicio, p.fin)} días hábiles)</div><div class="acciones-notif"><button class="aprobar" onclick="aprobarSolicitud('${p.id}')">✅ Aprobar</button><button class="rechazar" onclick="mostrarRazonRechazo('${p.id}')">❌ Rechazar</button></div><input type="text" class="razon-input" id="razon-${p.id}" placeholder="Motivo del rechazo (obligatorio)" style="display:none;"><button class="rechazar" id="btn-confirmar-rechazo-${p.id}" style="display:none; margin-top:8px;" onclick="rechazarSolicitud('${p.id}')">Confirmar rechazo</button>`;
           cont.appendChild(item);
         });
-      } catch(e) {
-        console.error('Error en renderizarNotificaciones:', e);
-      }
+      } catch(e) { console.error('Error en renderizarNotificaciones:', e); }
     }
 
     function aprobarSolicitud(id) {
       try {
         const sol = cargarSolicitudes();
         const idx = sol.findIndex(s => s.id === id);
-        if (idx !== -1) {
-          sol[idx].estado = 'aprobada';
-          guardarSolicitudes(sol);
-          renderizarNotificaciones();
-          renderizarInfoDias();
-          renderizarCalendario4x3();
-          renderizarSidebarEstado();
-          alert('✅ Solicitud aprobada');
-        }
-      } catch(e) {
-        console.error('Error aprobando solicitud:', e);
-        alert('Error al aprobar la solicitud');
-      }
+        if (idx !== -1) { sol[idx].estado = 'aprobada'; guardarSolicitudes(sol); renderizarNotificaciones(); renderizarInfoDias(); renderizarCalendario4x3(); renderizarSidebarEstado(); alert('✅ Solicitud aprobada'); }
+      } catch(e) { console.error(e); alert('Error al aprobar'); }
     }
 
     function mostrarRazonRechazo(id) {
@@ -768,27 +612,11 @@
     function rechazarSolicitud(id) {
       try {
         const razon = document.getElementById(`razon-${id}`).value.trim();
-        if (!razon) {
-          alert('Debes escribir un motivo para el rechazo');
-          return;
-        }
-
+        if (!razon) { alert('Debes escribir un motivo'); return; }
         const sol = cargarSolicitudes();
         const idx = sol.findIndex(s => s.id === id);
-        if (idx !== -1) {
-          sol[idx].estado = 'rechazada';
-          sol[idx].razonRechazo = razon;
-          guardarSolicitudes(sol);
-          renderizarNotificaciones();
-          renderizarInfoDias();
-          renderizarCalendario4x3();
-          renderizarSidebarEstado();
-          alert('❌ Solicitud rechazada');
-        }
-      } catch(e) {
-        console.error('Error rechazando solicitud:', e);
-        alert('Error al rechazar la solicitud');
-      }
+        if (idx !== -1) { sol[idx].estado = 'rechazada'; sol[idx].razonRechazo = razon; guardarSolicitudes(sol); renderizarNotificaciones(); renderizarInfoDias(); renderizarCalendario4x3(); renderizarSidebarEstado(); alert('❌ Solicitud rechazada'); }
+      } catch(e) { console.error(e); alert('Error al rechazar'); }
     }
 
     function renderizarInfoDias() {
@@ -796,291 +624,133 @@
         const grid = document.getElementById('info-dias-grid');
         const subtitulo = document.getElementById('info-dias-subtitulo');
         if (!grid || !subtitulo) return;
-        
         grid.innerHTML = '';
-
         const empleados = cargarEmpleados();
         const turnoActual = obtenerTurnoActualLimpieza();
         const hoy = new Date();
         const esPeriodoLibreActual = hoy < new Date(CONFIG.fechaLimiteAbril);
+        subtitulo.innerHTML = esPeriodoLibreActual ? '📅 <strong>Periodo libre</strong> (hasta el 31 de marzo)' : `📅 <strong>Periodo con orden</strong>. Le corresponde: <strong>${turnoActual ? turnoActual.nombre : '-'}</strong>`;
 
-        if (esPeriodoLibreActual) {
-          subtitulo.innerHTML = '📅 <strong>Periodo libre</strong> (hasta el 31 de marzo): cualquiera puede pedir vacaciones. Desde el 1 de abril se aplicará el orden de prioridad.';
-        } else {
-          subtitulo.innerHTML = `📅 <strong>Periodo con orden de prioridad</strong> (desde el 1 de abril). Le corresponde pedir a: <strong>${turnoActual ? turnoActual.nombre : '-'}</strong>`;
-        }
-
-        const ordenanzas = empleados
-          .filter(e => e.gremio === 'ordenanzas' && e.estado === 'activo' && (usuarioActual.rol === 'admin' || usuarioActual.gremio === 'ordenanzas'))
-          .sort((a, b) => a.nombre.localeCompare(b.nombre));
-
+        const ordenanzas = empleados.filter(e => e.gremio === 'ordenanzas' && e.estado === 'activo' && (usuarioActual.rol === 'admin' || usuarioActual.gremio === 'ordenanzas')).sort((a, b) => a.nombre.localeCompare(b.nombre));
         if (ordenanzas.length > 0) {
-          const sep = document.createElement('div');
-          sep.className = 'gremio-separator';
-          sep.textContent = '👥 Ordenanzas';
-          grid.appendChild(sep);
-
+          const sep = document.createElement('div'); sep.className = 'gremio-separator'; sep.textContent = '👥 Ordenanzas'; grid.appendChild(sep);
           ordenanzas.forEach(emp => {
             const usados = calcularDiasUsados(emp.id);
-            const restantes = emp.diasDisponibles - usados;
-            const ventanas = obtenerVentanasEmpleado(emp.id).length;
-            const item = document.createElement('div');
-            item.className = 'info-dias-item';
-            item.onclick = () => abrirModalEmpleado(emp.id);
-            item.innerHTML = `
-              <div class="nombre">${emp.nombre.split(' ').slice(0,2).join(' ')}</div>
-              <div class="dias">${restantes} / ${emp.diasDisponibles} días</div>
-              <div class="ventanas">${ventanas} / ${CONFIG.maximoVentanas} ventanas</div>
-            `;
+            const item = document.createElement('div'); item.className = 'info-dias-item'; item.onclick = () => abrirModalEmpleado(emp.id);
+            item.innerHTML = `<div class="nombre">${emp.nombre.split(' ').slice(0,2).join(' ')}</div><div class="dias">${emp.diasDisponibles - usados} / ${emp.diasDisponibles} días</div><div class="ventanas">${obtenerVentanasEmpleado(emp.id).length} / ${CONFIG.maximoVentanas} ventanas</div>`;
             grid.appendChild(item);
           });
         }
 
-        const limpieza = empleados
-          .filter(e => e.gremio === 'limpieza' && e.estado === 'activo' && (usuarioActual.rol === 'admin' || usuarioActual.gremio === 'limpieza'))
-          .sort((a, b) => a.prioridad - b.prioridad);
-
+        const limpieza = empleados.filter(e => e.gremio === 'limpieza' && e.estado === 'activo' && (usuarioActual.rol === 'admin' || usuarioActual.gremio === 'limpieza')).sort((a, b) => a.prioridad - b.prioridad);
         if (limpieza.length > 0) {
-          const sep = document.createElement('div');
-          sep.className = 'gremio-separator';
-          sep.textContent = '🧹 Servicio de Limpieza (orden de prioridad)';
-          grid.appendChild(sep);
-
+          const sep = document.createElement('div'); sep.className = 'gremio-separator'; sep.textContent = '🧹 Servicio de Limpieza'; grid.appendChild(sep);
           limpieza.forEach(emp => {
             const usados = calcularDiasUsados(emp.id);
-            const restantes = emp.diasDisponibles - usados;
-            const ventanas = obtenerVentanasEmpleado(emp.id).length;
             const esTurnoActual = turnoActual && emp.id === turnoActual.id;
-
-            const item = document.createElement('div');
-            item.className = 'info-dias-item' + (esTurnoActual ? ' turno-actual' : '');
-            item.onclick = () => abrirModalEmpleado(emp.id);
-            
-            let prioridadHtml = `<div class="prioridad">Prioridad ${emp.prioridad}º</div>`;
-            if (esTurnoActual) {
-              prioridadHtml = `<div class="prioridad">Prioridad ${emp.prioridad}º <span class="turno-badge">🎯 TURNO ACTUAL</span></div>`;
-            }
-
-            item.innerHTML = `
-              <div class="nombre">${emp.nombre.split(' ').slice(0,2).join(' ')}</div>
-              ${prioridadHtml}
-              <div class="dias">${restantes} / ${emp.diasDisponibles} días</div>
-              <div class="ventanas">${ventanas} / ${CONFIG.maximoVentanas} ventanas</div>
-            `;
+            const item = document.createElement('div'); item.className = 'info-dias-item' + (esTurnoActual ? ' turno-actual' : ''); item.onclick = () => abrirModalEmpleado(emp.id);
+            item.innerHTML = `<div class="nombre">${emp.nombre.split(' ').slice(0,2).join(' ')}</div><div class="prioridad">Prioridad ${emp.prioridad}º${esTurnoActual ? ' <span class="turno-badge">🎯 TURNO</span>' : ''}</div><div class="dias">${emp.diasDisponibles - usados} / ${emp.diasDisponibles} días</div><div class="ventanas">${obtenerVentanasEmpleado(emp.id).length} / ${CONFIG.maximoVentanas} ventanas</div>`;
             grid.appendChild(item);
           });
         }
-      } catch(e) {
-        console.error('Error en renderizarInfoDias:', e);
-      }
+      } catch(e) { console.error('Error en renderizarInfoDias:', e); }
     }
 
     function abrirModalEmpleado(empleadoId) {
       try {
         const empleado = cargarEmpleados().find(e => e.id === empleadoId);
         if (!empleado) return;
-        
         const todasSolicitudes = cargarSolicitudes().filter(s => s.empleadoId === empleadoId);
         const ventanasAprobadas = obtenerVentanasEmpleado(empleadoId);
         const usados = calcularDiasUsados(empleadoId);
-
         document.getElementById('modal-titulo').textContent = `Vacaciones de ${empleado.nombre}`;
         const contenido = document.getElementById('modal-contenido');
         contenido.innerHTML = '';
-
-        if (todasSolicitudes.length === 0) {
-          contenido.innerHTML = '<p style="text-align:center; color:#7f8c8d; padding:20px;">No hay solicitudes registradas</p>';
-        } else {
+        if (todasSolicitudes.length === 0) { contenido.innerHTML = '<p style="text-align:center; color:#7f8c8d; padding:20px;">No hay solicitudes</p>'; }
+        else {
           todasSolicitudes.forEach((v, i) => {
-            const item = document.createElement('div');
-            item.className = `vacacion-item ${v.estado}`;
-            
-            let estadoHtml = '';
-            if (v.estado === 'pendiente') estadoHtml = '<span class="estado-info estado-pendiente">⏳ PENDIENTE</span>';
-            else if (v.estado === 'aprobada') estadoHtml = '<span class="estado-info estado-aprobada">✅ APROBADA</span>';
-            else if (v.estado === 'rechazada') estadoHtml = '<span class="estado-info estado-rechazada">❌ RECHAZADA</span>';
-
-            let razonHtml = '';
-            if (v.estado === 'rechazada' && v.razonRechazo) {
-              razonHtml = `<div class="razon-rechazo"><strong>Motivo:</strong> ${v.razonRechazo}</div>`;
-            }
-
-            let accionesHtml = '';
-            if (v.estado === 'pendiente' && (usuarioActual.rol === 'admin' || usuarioActual.id === empleadoId)) {
-              accionesHtml = `
-                <div class="acciones">
-                  <button class="warning" onclick="editarVentana('${v.id}', '${empleadoId}')">✏️ Editar</button>
-                  <button class="danger" onclick="eliminarVentana('${v.id}', '${empleadoId}')">🗑️ Eliminar</button>
-                </div>
-              `;
-            }
-
-            item.innerHTML = `
-              <div class="fechas">Solicitud ${i+1}: ${formatearFecha(new Date(v.inicio))} - ${formatearFecha(new Date(v.fin))}</div>
-              ${estadoHtml}
-              <div class="dias-info">💼 ${calcularDiasHabiles(v.inicio, v.fin)} días hábiles | 📅 ${calcularDiasNaturales(v.inicio, v.fin)} días naturales</div>
-              ${razonHtml}
-              ${accionesHtml}
-            `;
+            const item = document.createElement('div'); item.className = `vacacion-item ${v.estado}`;
+            let estadoHtml = v.estado === 'pendiente' ? '<span class="estado-info estado-pendiente">⏳ PENDIENTE</span>' : v.estado === 'aprobada' ? '<span class="estado-info estado-aprobada">✅ APROBADA</span>' : '<span class="estado-info estado-rechazada">❌ RECHAZADA</span>';
+            let razonHtml = v.estado === 'rechazada' && v.razonRechazo ? `<div class="razon-rechazo"><strong>Motivo:</strong> ${v.razonRechazo}</div>` : '';
+            let accionesHtml = v.estado === 'pendiente' && (usuarioActual.rol === 'admin' || usuarioActual.id === empleadoId) ? `<div class="acciones"><button class="warning" onclick="editarVentana('${v.id}', '${empleadoId}')">✏️ Editar</button><button class="danger" onclick="eliminarVentana('${v.id}', '${empleadoId}')">🗑️ Eliminar</button></div>` : '';
+            item.innerHTML = `<div class="fechas">Solicitud ${i+1}: ${formatearFecha(new Date(v.inicio))} - ${formatearFecha(new Date(v.fin))}</div>${estadoHtml}<div class="dias-info">💼 ${calcularDiasHabiles(v.inicio, v.fin)} días hábiles | 📅 ${calcularDiasNaturales(v.inicio, v.fin)} días naturales</div>${razonHtml}${accionesHtml}`;
             contenido.appendChild(item);
           });
         }
-
-        const resumen = document.createElement('div');
-        resumen.style.cssText = 'margin-top:20px; padding:15px; background:#e8f6f3; border-radius:4px;';
-        resumen.innerHTML = `<strong>Resumen (solo aprobadas):</strong><br>Días usados: ${usados} / ${empleado.diasDisponibles}<br>Ventanas aprobadas: ${ventanasAprobadas.length} / ${CONFIG.maximoVentanas}`;
+        const resumen = document.createElement('div'); resumen.style.cssText = 'margin-top:20px; padding:15px; background:#e8f6f3; border-radius:4px;';
+        resumen.innerHTML = `<strong>Resumen (solo aprobadas):</strong><br>Días usados: ${usados} / ${empleado.diasDisponibles}<br>Ventanas: ${ventanasAprobadas.length} / ${CONFIG.maximoVentanas}`;
         contenido.appendChild(resumen);
-
         document.getElementById('modal-vacaciones').classList.add('active');
-      } catch(e) {
-        console.error('Error en abrirModalEmpleado:', e);
-      }
+      } catch(e) { console.error(e); }
     }
 
-    function cerrarModal(id) { 
-      const modal = document.getElementById(id);
-      if (modal) modal.classList.remove('active'); 
-    }
+    function cerrarModal(id) { const m = document.getElementById(id); if (m) m.classList.remove('active'); }
 
     function editarVentana(vid, eid) {
       try {
-        const v = cargarSolicitudes().find(s => s.id === vid);
-        if (!v) return;
+        const v = cargarSolicitudes().find(s => s.id === vid); if (!v) return;
         const contenido = document.getElementById('modal-contenido');
         const items = contenido.querySelectorAll('.vacacion-item');
         const idx = cargarSolicitudes().filter(s => s.empleadoId === eid).findIndex(s => s.id === vid);
-        if (items[idx]) {
-          items[idx].innerHTML = `
-            <div class="vacacion-edit-form">
-              <strong>Editando solicitud:</strong>
-              <label>Desde: <input type="date" id="edit-inicio" value="${v.inicio}"></label>
-              <label>Hasta: <input type="date" id="edit-fin" value="${v.fin}"></label>
-              <div class="botones-edit">
-                <button onclick="guardarEdicion('${vid}', '${eid}')">💾 Guardar</button>
-                <button class="secondary" onclick="abrirModalEmpleado('${eid}')">Cancelar</button>
-              </div>
-            </div>
-          `;
-        }
-      } catch(e) {
-        console.error('Error en editarVentana:', e);
-      }
+        if (items[idx]) items[idx].innerHTML = `<div class="vacacion-edit-form"><strong>Editando:</strong><label>Desde: <input type="date" id="edit-inicio" value="${v.inicio}"></label><label>Hasta: <input type="date" id="edit-fin" value="${v.fin}"></label><div class="botones-edit"><button onclick="guardarEdicion('${vid}', '${eid}')">💾 Guardar</button><button class="secondary" onclick="abrirModalEmpleado('${eid}')">Cancelar</button></div></div>`;
+      } catch(e) { console.error(e); }
     }
 
     function guardarEdicion(vid, eid) {
       try {
-        const ni = document.getElementById('edit-inicio').value;
-        const nf = document.getElementById('edit-fin').value;
+        const ni = document.getElementById('edit-inicio').value, nf = document.getElementById('edit-fin').value;
         if (!ni || !nf) { alert('Selecciona ambas fechas'); return; }
-        const val = validarSolicitud(eid, ni, nf, vid);
-        if (!val.ok) { alert(val.msg); return; }
-        const sol = cargarSolicitudes();
-        const idx = sol.findIndex(s => s.id === vid);
-        if (idx !== -1) {
-          sol[idx].inicio = ni; sol[idx].fin = nf;
-          guardarSolicitudes(sol);
-          abrirModalEmpleado(eid);
-          renderizarInfoDias(); 
-          renderizarCalendario4x3(); 
-          renderizarSidebarEstado();
-          if (usuarioActual.rol === 'admin') renderizarNotificaciones();
-        }
-      } catch(e) {
-        console.error('Error en guardarEdicion:', e);
-        alert('Error al guardar la edición');
-      }
+        const val = validarSolicitud(eid, ni, nf, vid); if (!val.ok) { alert(val.msg); return; }
+        const sol = cargarSolicitudes(); const idx = sol.findIndex(s => s.id === vid);
+        if (idx !== -1) { sol[idx].inicio = ni; sol[idx].fin = nf; guardarSolicitudes(sol); abrirModalEmpleado(eid); renderizarInfoDias(); renderizarCalendario4x3(); renderizarSidebarEstado(); if (usuarioActual.rol === 'admin') renderizarNotificaciones(); }
+      } catch(e) { console.error(e); alert('Error'); }
     }
 
     function eliminarVentana(vid, eid) {
       try {
-        if (!confirm('¿Eliminar esta solicitud?')) return;
+        if (!confirm('¿Eliminar?')) return;
         guardarSolicitudes(cargarSolicitudes().filter(s => s.id !== vid));
-        abrirModalEmpleado(eid);
-        renderizarInfoDias(); 
-        renderizarCalendario4x3(); 
-        renderizarSidebarEstado();
+        abrirModalEmpleado(eid); renderizarInfoDias(); renderizarCalendario4x3(); renderizarSidebarEstado();
         if (usuarioActual.rol === 'admin') renderizarNotificaciones();
-      } catch(e) {
-        console.error('Error en eliminarVentana:', e);
-        alert('Error al eliminar la solicitud');
-      }
+      } catch(e) { console.error(e); }
     }
 
     function renderizarCalendario4x3() {
       try {
-        const cont = document.getElementById('calendario-4x3-container');
-        if (!cont) return;
-        
+        const cont = document.getElementById('calendario-4x3-container'); if (!cont) return;
         cont.innerHTML = '';
         const sol = cargarSolicitudes().filter(s => s.estado === 'aprobada');
         const emps = cargarEmpleados();
-        const visibles = emps.filter(e => {
-          if (e.estado !== 'activo') return false;
-          if (usuarioActual.rol === 'admin') return true;
-          return e.gremio === usuarioActual.gremio;
-        });
+        const visibles = emps.filter(e => e.estado === 'activo' && (usuarioActual.rol === 'admin' || e.gremio === usuarioActual.gremio));
         const filas = [[0,1,2,3],[4,5,6,7],[8,9,10,11]];
-        const anyo = 2027;
-
         filas.forEach(fila => {
-          const filaDiv = document.createElement('div');
-          filaDiv.className = 'calendario-4x3';
-          filaDiv.style.marginBottom = '20px';
-
+          const filaDiv = document.createElement('div'); filaDiv.className = 'calendario-4x3'; filaDiv.style.marginBottom = '20px';
           fila.forEach(mi => {
-            const mesDiv = document.createElement('div');
-            mesDiv.className = 'mes-4x3';
-            const tit = document.createElement('div');
-            tit.className = 'mes-titulo';
-            tit.textContent = nombresMes[mi];
-            mesDiv.appendChild(tit);
-
-            const grid = document.createElement('div');
-            grid.className = 'mes-grid';
-            ['L','M','X','J','V','S','D'].forEach(d => {
-              const c = document.createElement('div');
-              c.className = 'cabecera'; c.textContent = d;
-              grid.appendChild(c);
-            });
-
-            const pd = new Date(anyo, mi, 1);
-            let off = (pd.getDay() + 6) % 7;
-            for (let i = 0; i < off; i++) {
-              const v = document.createElement('div');
-              v.className = 'dia-celda vacio';
-              grid.appendChild(v);
-            }
-
-            const dm = new Date(anyo, mi+1, 0).getDate();
+            const mesDiv = document.createElement('div'); mesDiv.className = 'mes-4x3';
+            const tit = document.createElement('div'); tit.className = 'mes-titulo'; tit.textContent = nombresMes[mi]; mesDiv.appendChild(tit);
+            const grid = document.createElement('div'); grid.className = 'mes-grid';
+            ['L','M','X','J','V','S','D'].forEach(d => { const c = document.createElement('div'); c.className = 'cabecera'; c.textContent = d; grid.appendChild(c); });
+            const pd = new Date(2027, mi, 1); let off = (pd.getDay() + 6) % 7;
+            for (let i = 0; i < off; i++) { const v = document.createElement('div'); v.className = 'dia-celda vacio'; grid.appendChild(v); }
+            const dm = new Date(2027, mi+1, 0).getDate();
             for (let d = 1; d <= dm; d++) {
-              const fs = `${anyo}-${String(mi+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+              const fs = `2027-${String(mi+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
               const personas = [];
-              visibles.forEach(emp => {
-                const enV = sol.find(s => s.empleadoId === emp.id && fs >= s.inicio && fs <= s.fin);
-                if (enV) personas.push({ emp, periodo: `${formatearFecha(new Date(enV.inicio))} - ${formatearFecha(new Date(enV.fin))}` });
-              });
-
+              visibles.forEach(emp => { const enV = sol.find(s => s.empleadoId === emp.id && fs >= s.inicio && fs <= s.fin); if (enV) personas.push({ emp, periodo: `${formatearFecha(new Date(enV.inicio))} - ${formatearFecha(new Date(enV.fin))}` }); });
               const c = personas.length;
-              const dc = document.createElement('div');
-              dc.className = 'dia-celda';
-              dc.textContent = d;
-
+              const dc = document.createElement('div'); dc.className = 'dia-celda'; dc.textContent = d;
               if (c === 0) dc.classList.add('sin-vacaciones');
               else if (c === 1) { dc.classList.add('con-vacaciones-1'); dc.textContent = d; }
               else if (c === 2) { dc.classList.add('con-vacaciones-2'); dc.textContent = c; }
-              else if (c >= 3) { dc.classList.add('con-vacaciones-3'); dc.textContent = c; }
-
+              else { dc.classList.add('con-vacaciones-3'); dc.textContent = c; }
               dc.onclick = () => abrirModalDetalleDia(fs, personas);
               grid.appendChild(dc);
             }
-            mesDiv.appendChild(grid);
-            filaDiv.appendChild(mesDiv);
+            mesDiv.appendChild(grid); filaDiv.appendChild(mesDiv);
           });
           cont.appendChild(filaDiv);
         });
-      } catch(e) {
-        console.error('Error en renderizarCalendario4x3:', e);
-      }
+      } catch(e) { console.error(e); }
     }
 
     function abrirModalDetalleDia(fs, personas) {
@@ -1089,67 +759,33 @@
         const fo = new Date(y,m-1,d);
         const ds = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][fo.getDay()];
         document.getElementById('modal-detalle-titulo').textContent = `📅 ${ds} ${formatearFecha(fo)}`;
-        const cont = document.getElementById('modal-detalle-contenido');
-        cont.innerHTML = '';
-        if (personas.length === 0) {
-          cont.innerHTML = '<p style="text-align:center; color:#7f8c8d; padding:20px;">Nadie está de vacaciones</p>';
-        } else {
-          const r = document.createElement('div');
-          r.style.cssText = 'background:#d6eaf8; padding:12px; border-radius:4px; margin-bottom:15px; font-weight:bold;';
-          r.textContent = `${personas.length} persona(s) de vacaciones (aprobadas)`;
-          cont.appendChild(r);
+        const cont = document.getElementById('modal-detalle-contenido'); cont.innerHTML = '';
+        if (personas.length === 0) cont.innerHTML = '<p style="text-align:center; color:#7f8c8d; padding:20px;">Nadie está de vacaciones</p>';
+        else {
+          const r = document.createElement('div'); r.style.cssText = 'background:#d6eaf8; padding:12px; border-radius:4px; margin-bottom:15px; font-weight:bold;';
+          r.textContent = `${personas.length} persona(s) de vacaciones`; cont.appendChild(r);
           personas.forEach(p => {
-            const it = document.createElement('div');
-            it.className = `detalle-dia-item ${p.emp.gremio}`;
-            it.innerHTML = `
-              <div class="nombre-empleado">👤 ${p.emp.nombre}</div>
-              <div class="periodo">📅 ${p.periodo}</div>
-              <div class="periodo">💼 ${p.emp.gremio === 'ordenanzas' ? 'Ordenanza' : 'Limpieza'}</div>
-            `;
+            const it = document.createElement('div'); it.className = `detalle-dia-item ${p.emp.gremio}`;
+            it.innerHTML = `<div class="nombre-empleado">👤 ${p.emp.nombre}</div><div class="periodo">📅 ${p.periodo}</div><div class="periodo">💼 ${p.emp.gremio === 'ordenanzas' ? 'Ordenanza' : 'Limpieza'}</div>`;
             cont.appendChild(it);
           });
         }
         document.getElementById('modal-detalle-dia').classList.add('active');
-      } catch(e) {
-        console.error('Error en abrirModalDetalleDia:', e);
-      }
+      } catch(e) { console.error(e); }
     }
 
     function configurarFormulario() {
-      const sel = document.getElementById('empleado');
-      const lab = document.getElementById('label-empleado');
-      const emps = cargarEmpleados();
-      sel.innerHTML = '';
-
+      const sel = document.getElementById('empleado'); const lab = document.getElementById('label-empleado');
+      const emps = cargarEmpleados(); sel.innerHTML = '';
       if (usuarioActual.rol === 'admin') {
         lab.style.display = 'block';
-        emps.filter(e => e.estado === 'activo').forEach(e => {
-          const o = document.createElement('option');
-          o.value = e.id; o.textContent = e.nombre;
-          sel.appendChild(o);
-        });
+        emps.filter(e => e.estado === 'activo').forEach(e => { const o = document.createElement('option'); o.value = e.id; o.textContent = e.nombre; sel.appendChild(o); });
         sel.onchange = () => { diaInicio = null; diaFin = null; renderizarCalendarioInteractivo(); actualizarResumen(); };
-      } else { lab.style.display = 'none'; }
-
-      const sm = document.getElementById('selector-mes');
-      sm.innerHTML = '';
-      for (let y = 2027; y <= 2028; y++) {
-        const mf = y === 2028 ? 0 : 11;
-        for (let m = 0; m <= mf; m++) {
-          const o = document.createElement('option');
-          o.value = `${y}-${m}`; o.textContent = `${nombresMes[m]} ${y}`;
-          sm.appendChild(o);
-        }
-      }
+      } else lab.style.display = 'none';
+      const sm = document.getElementById('selector-mes'); sm.innerHTML = '';
+      for (let y = 2027; y <= 2028; y++) { const mf = y === 2028 ? 0 : 11; for (let m = 0; m <= mf; m++) { const o = document.createElement('option'); o.value = `${y}-${m}`; o.textContent = `${nombresMes[m]} ${y}`; sm.appendChild(o); } }
       sm.value = `${anyoActual}-${mesActual}`;
-      
-      sm.onchange = () => {
-        const [y,m] = sm.value.split('-').map(Number);
-        anyoActual = y; mesActual = m;
-        renderizarCalendarioInteractivo(); 
-        actualizarResumen();
-      };
-
+      sm.onchange = () => { const [y,m] = sm.value.split('-').map(Number); anyoActual = y; mesActual = m; renderizarCalendarioInteractivo(); actualizarResumen(); };
       document.getElementById('btn-guardar').onclick = guardarVacaciones;
       document.getElementById('btn-limpiar').onclick = limpiarSeleccion;
       renderizarCalendarioInteractivo();
@@ -1157,145 +793,61 @@
 
     function renderizarCalendarioInteractivo() {
       try {
-        const grid = document.getElementById('calendario-grid');
-        if (!grid) return;
-        
+        const grid = document.getElementById('calendario-grid'); if (!grid) return;
         grid.innerHTML = '';
         document.getElementById('titulo-mes').textContent = `${nombresMes[mesActual]} ${anyoActual}`;
-        ['L','M','X','J','V','S','D'].forEach(d => {
-          const c = document.createElement('div');
-          c.className = 'cabecera'; c.textContent = d;
-          grid.appendChild(c);
-        });
-
-        const pd = new Date(anyoActual, mesActual, 1);
-        let off = (pd.getDay() + 6) % 7;
-        for (let i = 0; i < off; i++) {
-          const v = document.createElement('div');
-          v.className = 'dia vacio';
-          grid.appendChild(v);
-        }
-
+        ['L','M','X','J','V','S','D'].forEach(d => { const c = document.createElement('div'); c.className = 'cabecera'; c.textContent = d; grid.appendChild(c); });
+        const pd = new Date(anyoActual, mesActual, 1); let off = (pd.getDay() + 6) % 7;
+        for (let i = 0; i < off; i++) { const v = document.createElement('div'); v.className = 'dia vacio'; grid.appendChild(v); }
         const dm = new Date(anyoActual, mesActual+1, 0).getDate();
-        const hoy = new Date();
-        const emps = cargarEmpleados();
-        const sol = cargarSolicitudes();
-
+        const hoy = new Date(); const emps = cargarEmpleados(); const sol = cargarSolicitudes();
         for (let d = 1; d <= dm; d++) {
           const fs = `${anyoActual}-${String(mesActual+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
           const fo = new Date(anyoActual, mesActual, d);
-          const dd = document.createElement('div');
-          dd.className = 'dia'; dd.textContent = d;
-
-          const pi = new Date(CONFIG.periodoVacaciones.inicio);
-          const pf = new Date(CONFIG.periodoVacaciones.fin);
-          if (fo < pi || fo > pf) {
-            dd.classList.add('deshabilitado');
-          } else {
-            if (esDiaNoLaborable(fo)) {
-              dd.classList.add(fo.getDay() === 0 || fo.getDay() === 6 ? 'fin-de-semana' : 'festivo');
-            } else {
+          const dd = document.createElement('div'); dd.className = 'dia'; dd.textContent = d;
+          const pi = new Date(CONFIG.periodoVacaciones.inicio), pf = new Date(CONFIG.periodoVacaciones.fin);
+          if (fo < pi || fo > pf) dd.classList.add('deshabilitado');
+          else {
+            if (esDiaNoLaborable(fo)) dd.classList.add(fo.getDay() === 0 || fo.getDay() === 6 ? 'fin-de-semana' : 'festivo');
+            else {
               if (hoy.toDateString() === fo.toDateString()) dd.classList.add('hoy');
-              
-              if (sol.some(s => s.estado === 'aprobada' && fs >= s.inicio && fs <= s.fin && emps.find(e => e.id === s.empleadoId)?.gremio === usuarioActual.gremio)) {
-                dd.classList.add('vacaciones');
-              }
-              else if (sol.some(s => s.estado === 'pendiente' && fs >= s.inicio && fs <= s.fin && emps.find(e => e.id === s.empleadoId)?.gremio === usuarioActual.gremio)) {
-                dd.classList.add('pendiente');
-              }
-
-              if (diaInicio) {
-                const iD = new Date(diaInicio);
-                if (fo.getTime() === iD.getTime()) {
-                  dd.classList.add('inicio');
-                  dd.title = 'Día de inicio seleccionado';
-                }
-              }
-              if (diaInicio && diaFin) {
-                const iD = new Date(diaInicio);
-                const fD = new Date(diaFin);
-                if (fo.getTime() === fD.getTime()) {
-                  dd.classList.add('fin');
-                  dd.title = 'Día de fin seleccionado';
-                } else if (fo > iD && fo < fD) {
-                  dd.classList.add('rango');
-                }
-              }
-
+              if (sol.some(s => s.estado === 'aprobada' && fs >= s.inicio && fs <= s.fin && emps.find(e => e.id === s.empleadoId)?.gremio === usuarioActual.gremio)) dd.classList.add('vacaciones');
+              else if (sol.some(s => s.estado === 'pendiente' && fs >= s.inicio && fs <= s.fin && emps.find(e => e.id === s.empleadoId)?.gremio === usuarioActual.gremio)) dd.classList.add('pendiente');
+              if (diaInicio) { const iD = new Date(diaInicio); if (fo.getTime() === iD.getTime()) { dd.classList.add('inicio'); dd.title = 'Inicio'; } }
+              if (diaInicio && diaFin) { const iD = new Date(diaInicio), fD = new Date(diaFin); if (fo.getTime() === fD.getTime()) { dd.classList.add('fin'); dd.title = 'Fin'; } else if (fo > iD && fo < fD) dd.classList.add('rango'); }
               dd.onclick = () => seleccionarDia(fo);
             }
           }
           grid.appendChild(dd);
         }
-      } catch(e) {
-        console.error('Error en renderizarCalendarioInteractivo:', e);
-      }
+      } catch(e) { console.error(e); }
     }
 
     function seleccionarDia(f) {
-      const mensaje = document.getElementById('mensaje');
-      mensaje.textContent = '';
-      mensaje.className = '';
-
-      if (!diaInicio) {
-        diaInicio = f;
-        mensaje.textContent = `📅 Inicio seleccionado: ${formatearFecha(f)}. Cambia de mes si necesitas y haz clic en el día de fin.`;
-        mensaje.className = 'info';
-      } else if (!diaFin) {
-        if (f < diaInicio) {
-          diaFin = diaInicio;
-          diaInicio = f;
-        } else {
-          diaFin = f;
-        }
-      } else {
-        diaInicio = f;
-        diaFin = null;
-        mensaje.textContent = `📅 Nuevo inicio seleccionado: ${formatearFecha(f)}`;
-        mensaje.className = 'info';
-      }
-
-      renderizarCalendarioInteractivo(); 
-      actualizarResumen();
+      const mensaje = document.getElementById('mensaje'); mensaje.textContent = ''; mensaje.className = '';
+      if (!diaInicio) { diaInicio = f; mensaje.textContent = `📅 Inicio: ${formatearFecha(f)}. Cambia de mes si necesitas.`; mensaje.className = 'info'; }
+      else if (!diaFin) { if (f < diaInicio) { diaFin = diaInicio; diaInicio = f; } else diaFin = f; }
+      else { diaInicio = f; diaFin = null; mensaje.textContent = `📅 Nuevo inicio: ${formatearFecha(f)}`; mensaje.className = 'info'; }
+      renderizarCalendarioInteractivo(); actualizarResumen();
     }
 
     function actualizarResumen() {
-      const r = document.getElementById('resumen-seleccion');
-      const bg = document.getElementById('btn-guardar');
-      const bl = document.getElementById('btn-limpiar');
-      
-      if (!diaInicio) {
-        r.innerHTML = '💡 Haz clic en el <strong>día de inicio</strong> y luego en el <strong>día de fin</strong> (mínimo 7 días naturales incluyendo fines de semana y festivos).';
-        bg.style.display = 'none'; bl.style.display = 'none';
-      } else if (!diaFin) {
-        const fechaFormateada = formatearFecha(diaInicio);
-        r.innerHTML = `📅 <strong>Inicio:</strong> ${fechaFormateada} <span style="color:#f39c12;">(seleccionado)</span><br>💡 Cambia de mes si es necesario y haz clic en el <strong>día de fin</strong>.`;
-        bg.style.display = 'none'; bl.style.display = 'inline-block';
-      } else {
-        const inicioFormateada = formatearFecha(diaInicio);
-        const finFormateada = formatearFecha(diaFin);
-        const diasNaturales = calcularDiasNaturales(diaInicio, diaFin);
-        const diasHabiles = calcularDiasHabiles(diaInicio, diaFin);
+      const r = document.getElementById('resumen-seleccion'); const bg = document.getElementById('btn-guardar'); const bl = document.getElementById('btn-limpiar');
+      if (!diaInicio) { r.innerHTML = '💡 Haz clic en el <strong>día de inicio</strong> y luego en el <strong>día de fin</strong> (mínimo 7 días naturales).'; bg.style.display = 'none'; bl.style.display = 'none'; }
+      else if (!diaFin) { r.innerHTML = `📅 <strong>Inicio:</strong> ${formatearFecha(diaInicio)} <span style="color:#f39c12;">(seleccionado)</span><br>💡 Cambia de mes si es necesario y haz clic en el <strong>día de fin</strong>.`; bg.style.display = 'none'; bl.style.display = 'inline-block'; }
+      else {
+        const diasN = calcularDiasNaturales(diaInicio, diaFin), diasH = calcularDiasHabiles(diaInicio, diaFin);
         const mismoMes = diaInicio.getMonth() === diaFin.getMonth() && diaInicio.getFullYear() === diaFin.getFullYear();
         const textoMes = mismoMes ? '' : `<br>📆 <em>Selección entre ${nombresMes[diaInicio.getMonth()]} y ${nombresMes[diaFin.getMonth()]}</em>`;
-        
-        r.innerHTML = `✅ <strong>Desde:</strong> ${inicioFormateada} <strong>Hasta:</strong> ${finFormateada}<br>📅 ${diasNaturales} días naturales (incluye fines de semana y festivos) | 💼 ${diasHabiles} días hábiles${textoMes}`;
+        r.innerHTML = `✅ <strong>Desde:</strong> ${formatearFecha(diaInicio)} <strong>Hasta:</strong> ${formatearFecha(diaFin)}<br>📅 ${diasN} días naturales | 💼 ${diasH} días hábiles${textoMes}`;
         bg.style.display = 'inline-block'; bl.style.display = 'inline-block';
       }
     }
 
-    function formatearFecha(f) {
-      return `${String(f.getDate()).padStart(2,'0')}/${String(f.getMonth()+1).padStart(2,'0')}/${f.getFullYear()}`;
-    }
-    function fechaAString(f) {
-      return `${f.getFullYear()}-${String(f.getMonth()+1).padStart(2,'0')}-${String(f.getDate()).padStart(2,'0')}`;
-    }
+    function formatearFecha(f) { return `${String(f.getDate()).padStart(2,'0')}/${String(f.getMonth()+1).padStart(2,'0')}/${f.getFullYear()}`; }
+    function fechaAString(f) { return `${f.getFullYear()}-${String(f.getMonth()+1).padStart(2,'0')}-${String(f.getDate()).padStart(2,'0')}`; }
 
-    function limpiarSeleccion() {
-      diaInicio = null; diaFin = null;
-      document.getElementById('mensaje').textContent = '';
-      renderizarCalendarioInteractivo(); actualizarResumen();
-    }
+    function limpiarSeleccion() { diaInicio = null; diaFin = null; document.getElementById('mensaje').textContent = ''; renderizarCalendarioInteractivo(); actualizarResumen(); }
 
     function guardarVacaciones() {
       try {
@@ -1303,28 +855,14 @@
         const m = document.getElementById('mensaje');
         const eid = usuarioActual.rol === 'admin' ? document.getElementById('empleado').value : usuarioActual.id;
         const ini = fechaAString(diaInicio), fin = fechaAString(diaFin);
-
         const v = validarSolicitud(eid, ini, fin);
         if (!v.ok) { m.textContent = v.msg; m.className = 'error'; return; }
-
         const emp = cargarEmpleados().find(e => e.id === eid);
         const diasHabiles = calcularDiasHabiles(diaInicio, diaFin);
         const diasNaturales = calcularDiasNaturales(diaInicio, diaFin);
+        const nuevaSolicitud = { id: Date.now().toString(), empleadoId: eid, inicio: ini, fin, estado: 'pendiente', fechaSolicitud: new Date().toISOString() };
+        const d = cargarSolicitudes(); d.push(nuevaSolicitud); guardarSolicitudes(d);
 
-        const nuevaSolicitud = { 
-          id: Date.now().toString(), 
-          empleadoId: eid, 
-          inicio: ini, 
-          fin,
-          estado: 'pendiente',
-          fechaSolicitud: new Date().toISOString()
-        };
-        
-        const d = cargarSolicitudes();
-        d.push(nuevaSolicitud);
-        guardarSolicitudes(d);
-
-        // ENVÍO DE EMAIL CON EMAILJS
         const templateParams = {
           to_email: "artufer@gmail.com",
           empleado_nombre: emp.nombre,
@@ -1336,27 +874,21 @@
           solicitante: usuarioActual.nombre
         };
 
-        console.log('📧 Enviando email con parámetros:', templateParams);
-        console.log('📧 Service ID: service_m8s780p');
-        console.log('📧 Template ID: r89x3wr');
-        console.log('📧 Public Key: HhTaoxZGy2zC2YXSI');
+        console.log('📧 Enviando email...', templateParams);
 
         if (typeof emailjs === 'undefined') {
-          console.error('❌ EmailJS no está cargado');
-          m.textContent = `⏳ Solicitud registrada como PENDIENTE (EmailJS no cargado)`;
+          m.textContent = `⏳ Solicitud registrada (EmailJS no cargado)`;
           m.className = 'warning-msg';
         } else {
-          emailjs.send('service_m8s780p', 'r89x3wr', templateParams)
+          emailjs.send('service_exzuwwi', 'do94359', templateParams)
             .then(function(response) {
-               console.log('✅ Email enviado con éxito!', response.status, response.text);
-               m.textContent = `⏳ Solicitud registrada como PENDIENTE. Se ha enviado un aviso por email al administrador.`;
-               m.className = 'warning-msg';
+              console.log('✅ Email enviado:', response.status, response.text);
+              m.textContent = `⏳ Solicitud registrada como PENDIENTE. Email enviado al administrador.`;
+              m.className = 'warning-msg';
             }, function(error) {
-               console.error('❌ Error detallado de EmailJS:', error);
-               console.error('❌ Código:', error.status);
-               console.error('❌ Texto:', error.text);
-               m.textContent = `⏳ Solicitud registrada como PENDIENTE (Error: ${error.text || error.message || 'desconocido'})`;
-               m.className = 'warning-msg';
+              console.error('❌ Error EmailJS:', error);
+              m.textContent = `⏳ Solicitud registrada (Error email: ${error.text || 'desconocido'})`;
+              m.className = 'warning-msg';
             });
         }
 
@@ -1364,10 +896,7 @@
         renderizarCalendarioInteractivo(); actualizarResumen();
         renderizarInfoDias(); renderizarCalendario4x3(); renderizarSidebarEstado();
         if (usuarioActual.rol === 'admin') renderizarNotificaciones();
-      } catch(e) {
-        console.error('Error en guardarVacaciones:', e);
-        alert('Error al guardar la solicitud');
-      }
+      } catch(e) { console.error(e); alert('Error al guardar'); }
     }
 
     function inicializarPanelAdmin() {
@@ -1377,12 +906,9 @@
 
     function renderizarListaEstados() {
       try {
-        const c = document.getElementById('lista-estados');
-        if (!c) return;
-        
+        const c = document.getElementById('lista-estados'); if (!c) return;
         c.innerHTML = '';
         const empleados = cargarEmpleados();
-        
         empleados.forEach((e) => {
           const d = document.createElement('div');
           d.className = `empleado-estado ${e.estado === 'baja' ? 'baja' : ''}`;
@@ -1390,51 +916,26 @@
           const b = document.createElement('button');
           b.textContent = e.estado === 'activo' ? 'Poner de baja' : 'Reactivar';
           b.style.cssText = `background:${e.estado === 'activo' ? '#e74c3c' : '#27ae60'}; padding:6px 12px; font-size:12px; margin:0;`;
-          
-          // ✅ Closure para capturar el ID del empleado
           const empleadoId = e.id;
-          b.onclick = () => { 
+          b.onclick = () => {
             try {
-              console.log('Cambiando estado de empleado ID:', empleadoId);
-              
-              const empleadosActualizados = cargarEmpleados();
-              const empIndex = empleadosActualizados.findIndex(emp => emp.id === empleadoId);
-              
+              constemps = cargarEmpleados();
+              const empIndex = emps.findIndex(emp => emp.id === empleadoId);
               if (empIndex !== -1) {
-                const nuevoEstado = empleadosActualizados[empIndex].estado === 'activo' ? 'baja' : 'activo';
-                console.log('Cambiando de', empleadosActualizados[empIndex].estado, 'a', nuevoEstado);
-                
-                empleadosActualizados[empIndex].estado = nuevoEstado;
-                guardarEmpleados(empleadosActualizados);
-                
-                console.log('Estado actualizado y guardado correctamente');
-                
-                renderizarListaEstados(); 
-                renderizarInfoDias();
-                renderizarNotificaciones();
-                renderizarSidebarEstado();
-                
-                console.log('Todas las funciones de renderizado completadas');
-              } else {
-                console.error('Empleado no encontrado con ID:', empleadoId);
+                emps[empIndex].estado = emps[empIndex].estado === 'activo' ? 'baja' : 'activo';
+                guardarEmpleados(emps);
+                renderizarListaEstados(); renderizarInfoDias(); renderizarNotificaciones(); renderizarSidebarEstado();
               }
-            } catch(err) {
-              console.error('Error al cambiar estado:', err);
-              alert('Error al cambiar el estado: ' + err.message);
-            }
+            } catch(err) { console.error(err); alert('Error: ' + err.message); }
           };
-          
-          d.appendChild(b);
-          c.appendChild(d);
+          d.appendChild(b); c.appendChild(d);
         });
-      } catch(e) {
-        console.error('Error en renderizarListaEstados:', e);
-      }
+      } catch(e) { console.error(e); }
     }
 
     function rotarOrdenLimpieza() {
       try {
-        if (!confirm('¿Avanzar orden de prioridad?')) return;
+        if (!confirm('¿Avanzar orden?')) return;
         const emps = cargarEmpleados();
         const l = emps.filter(e => e.gremio === 'limpieza');
         const max = Math.max(...l.map(e => e.prioridad));
@@ -1444,23 +945,14 @@
         guardarEmpleados(emps);
         alert('✅ Orden rotado:\n' + l.map(e => `${e.prioridad}º ${e.nombre}`).join('\n'));
         location.reload();
-      } catch(e) {
-        console.error('Error en rotarOrdenLimpieza:', e);
-        alert('Error al rotar el orden');
-      }
+      } catch(e) { console.error(e); alert('Error'); }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      console.log('DOM cargado, inicializando app...');
+      console.log('DOM cargado');
       inicializarLogin();
       const uid = sessionStorage.getItem('usuarioActual');
-      if (uid) {
-        usuarioActual = cargarEmpleados().find(e => e.id === uid);
-        if (usuarioActual) {
-          console.log('Sesión restaurada:', usuarioActual.nombre);
-          mostrarApp();
-        }
-      }
+      if (uid) { usuarioActual = cargarEmpleados().find(e => e.id === uid); if (usuarioActual) mostrarApp(); }
     });
   </script>
 </body>
