@@ -49,7 +49,7 @@
     .estado-sidebar { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: fit-content; position: sticky; top: 20px; }
     .estado-sidebar h3 { color: #2c3e50; margin-bottom: 15px; font-size: 16px; border-bottom: 2px solid #3498db; padding-bottom: 8px; }
     
-    .estado-item { padding: 12px; margin: 8px 0; border-radius: 6px; border-left: 4px solid; }
+    .estado-item { padding: 12px; margin: 8px 0; border-radius: 6px; border-left: 4px solid; position: relative; }
     .estado-item.pendiente { background: #fef9e7; border-left-color: #f39c12; }
     .estado-item.aprobada { background: #d5f4e6; border-left-color: #27ae60; }
     .estado-item.rechazada { background: #fdedec; border-left-color: #e74c3c; }
@@ -61,6 +61,23 @@
     .estado-badge.aprobada { background: #27ae60; color: white; }
     .estado-badge.rechazada { background: #e74c3c; color: white; }
     .sin-estado { text-align: center; color: #95a5a6; font-style: italic; padding: 20px; }
+    
+    /* Botón de anular */
+    .btn-anular {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+    }
+    .btn-anular:hover { opacity: 1; }
 
     section { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     h2 { color: #2c3e50; margin-bottom: 15px; }
@@ -120,7 +137,7 @@
     .modal-overlay.active { display: flex; }
     .modal { background: white; padding: 30px; border-radius: 8px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
     .modal h3 { color: #2c3e50; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #3498db; }
-    .vacacion-item { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 4px; border-left: 4px solid #3498db; }
+    .vacacion-item { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 4px; border-left: 4px solid #3498db; position: relative; }
     .vacacion-item.pendiente { border-left-color: #f39c12; }
     .vacacion-item.aprobada { border-left-color: #27ae60; }
     .vacacion-item.rechazada { border-left-color: #e74c3c; }
@@ -218,7 +235,7 @@
 
     <div class="tabs-container">
       <div class="tabs">
-        <button class="tab hidden" data-tab="admin" id="tab-btn-admin">⚙️ Administración</button>
+        <button class="tab hidden" data-tab="admin" id="tab-btn-admin">️ Administración</button>
         <button class="tab" data-tab="solicitar" id="tab-btn-solicitar">📝 Solicitar vacaciones</button>
         <button class="tab" data-tab="calendario" id="tab-btn-calendario">📅 Calendario</button>
       </div>
@@ -228,7 +245,7 @@
           <h2>⚙️ Panel de Administración</h2>
           
           <div class="notificaciones-panel">
-            <h3>🔔 Solicitudes pendientes <span class="badge-notif" id="badge-notif">0</span></h3>
+            <h3> Solicitudes pendientes <span class="badge-notif" id="badge-notif">0</span></h3>
             <div id="lista-notificaciones"></div>
           </div>
 
@@ -438,7 +455,7 @@
         const empleados = cargarEmpleados();
         const empleado = empleados.find(e => e.id === empleadoId);
         if (!empleado) return { ok: false, msg: 'Empleado no reconocido' };
-        if (empleado.estado === 'baja') return { ok: false, msg: `❌ ${empleado.nombre} está de baja.` };
+        if (empleado.estado === 'baja') return { ok: false, msg: ` ${empleado.nombre} está de baja.` };
         if (inicio < CONFIG.periodoVacaciones.inicio || fin > CONFIG.periodoVacaciones.fin) return { ok: false, msg: '❌ Fuera del periodo de vacaciones' };
         const diasN = calcularDiasNaturales(inicio, fin);
         if (diasN < CONFIG.minimoDiasNaturales) return { ok: false, msg: `❌ Mínimo ${CONFIG.minimoDiasNaturales} días naturales` };
@@ -526,7 +543,7 @@
     function actualizarInterfaz() {
       if (!usuarioActual) return;
       const subtitulo = document.getElementById('subtitulo-gremio');
-      if (usuarioActual.rol === 'admin') subtitulo.textContent = '👥 Ordenanzas y Servicio de Limpieza';
+      if (usuarioActual.rol === 'admin') subtitulo.textContent = ' Ordenanzas y Servicio de Limpieza';
       else if (usuarioActual.gremio === 'ordenanzas') subtitulo.textContent = '👥 Ordenanzas';
       else subtitulo.textContent = '🧹 Servicio de Limpieza';
 
@@ -565,10 +582,33 @@
           let estadoTexto = s.estado === 'pendiente' ? '⏳ Pendiente' : s.estado === 'aprobada' ? '✅ Aprobada' : '❌ Rechazada';
           let razonHtml = '';
           if (s.estado === 'rechazada' && s.razonRechazo) razonHtml = `<div style="margin-top:6px; padding:6px; background:#fadbd8; border-radius:4px; font-size:11px; color:#c0392b;"><strong>Motivo:</strong> ${s.razonRechazo}</div>`;
-          item.innerHTML = `<div class="titulo">${emp.nombre.split(' ').slice(0,2).join(' ')}</div><div class="fechas">${formatearFecha(new Date(s.inicio))} - ${formatearFecha(new Date(s.fin))}</div><div class="fechas">${diasHabiles} días hábiles | ${diasNaturales} naturales</div><span class="estado-badge ${s.estado}">${estadoTexto}</span>${razonHtml}`;
+          
+          // ✅ Botón de anular para TODOS (incluso si está aprobada)
+          const puedeAnular = (usuarioActual.rol === 'admin' || s.empleadoId === usuarioActual.id);
+          const btnAnular = puedeAnular ? `<button class="btn-anular" onclick="anularSolicitud('${s.id}', '${emp.id}')">🗑️ Anular</button>` : '';
+          
+          item.innerHTML = `<div class="titulo">${emp.nombre.split(' ').slice(0,2).join(' ')}</div><div class="fechas">${formatearFecha(new Date(s.inicio))} - ${formatearFecha(new Date(s.fin))}</div><div class="fechas">${diasHabiles} días hábiles | ${diasNaturales} naturales</div><span class="estado-badge ${s.estado}">${estadoTexto}</span>${razonHtml}${btnAnular}`;
           cont.appendChild(item);
         });
       } catch(e) { console.error('Error en renderizarSidebarEstado:', e); }
+    }
+
+    // ✅ NUEVA FUNCIÓN: Anular solicitud (cualquier estado)
+    function anularSolicitud(sid, eid) {
+      if (!confirm('¿Estás seguro de anular esta solicitud? Esta acción no se puede deshacer.')) return;
+      try {
+        const sol = cargarSolicitudes();
+        const idx = sol.findIndex(s => s.id === sid);
+        if (idx !== -1) {
+          sol.splice(idx, 1); // Eliminar completamente
+          guardarSolicitudes(sol);
+          renderizarSidebarEstado();
+          renderizarInfoDias();
+          renderizarCalendario4x3();
+          if (usuarioActual.rol === 'admin') renderizarNotificaciones();
+          alert('✅ Solicitud anulada correctamente');
+        }
+      } catch(e) { console.error(e); alert('Error al anular'); }
     }
 
     function renderizarNotificaciones() {
@@ -633,7 +673,7 @@
 
         const ordenanzas = empleados.filter(e => e.gremio === 'ordenanzas' && e.estado === 'activo' && (usuarioActual.rol === 'admin' || usuarioActual.gremio === 'ordenanzas')).sort((a, b) => a.nombre.localeCompare(b.nombre));
         if (ordenanzas.length > 0) {
-          const sep = document.createElement('div'); sep.className = 'gremio-separator'; sep.textContent = '👥 Ordenanzas'; grid.appendChild(sep);
+          const sep = document.createElement('div'); sep.className = 'gremio-separator'; sep.textContent = ' Ordenanzas'; grid.appendChild(sep);
           ordenanzas.forEach(emp => {
             const usados = calcularDiasUsados(emp.id);
             const item = document.createElement('div'); item.className = 'info-dias-item'; item.onclick = () => abrirModalEmpleado(emp.id);
@@ -644,7 +684,7 @@
 
         const limpieza = empleados.filter(e => e.gremio === 'limpieza' && e.estado === 'activo' && (usuarioActual.rol === 'admin' || usuarioActual.gremio === 'limpieza')).sort((a, b) => a.prioridad - b.prioridad);
         if (limpieza.length > 0) {
-          const sep = document.createElement('div'); sep.className = 'gremio-separator'; sep.textContent = '🧹 Servicio de Limpieza'; grid.appendChild(sep);
+          const sep = document.createElement('div'); sep.className = 'gremio-separator'; sep.textContent = ' Servicio de Limpieza'; grid.appendChild(sep);
           limpieza.forEach(emp => {
             const usados = calcularDiasUsados(emp.id);
             const esTurnoActual = turnoActual && emp.id === turnoActual.id;
@@ -672,7 +712,18 @@
             const item = document.createElement('div'); item.className = `vacacion-item ${v.estado}`;
             let estadoHtml = v.estado === 'pendiente' ? '<span class="estado-info estado-pendiente">⏳ PENDIENTE</span>' : v.estado === 'aprobada' ? '<span class="estado-info estado-aprobada">✅ APROBADA</span>' : '<span class="estado-info estado-rechazada">❌ RECHAZADA</span>';
             let razonHtml = v.estado === 'rechazada' && v.razonRechazo ? `<div class="razon-rechazo"><strong>Motivo:</strong> ${v.razonRechazo}</div>` : '';
-            let accionesHtml = v.estado === 'pendiente' && (usuarioActual.rol === 'admin' || usuarioActual.id === empleadoId) ? `<div class="acciones"><button class="warning" onclick="editarVentana('${v.id}', '${empleadoId}')">✏️ Editar</button><button class="danger" onclick="eliminarVentana('${v.id}', '${empleadoId}')">🗑️ Eliminar</button></div>` : '';
+            
+            // ✅ Botón de anular para admin o propietario (cualquier estado)
+            const puedeAnular = (usuarioActual.rol === 'admin' || v.empleadoId === usuarioActual.id);
+            const btnAnular = puedeAnular ? `<button class="danger" onclick="anularSolicitud('${v.id}', '${empleadoId}')">🗑️ Anular</button>` : '';
+            
+            let accionesHtml = '';
+            if (v.estado === 'pendiente' && puedeAnular) {
+              accionesHtml = `<div class="acciones"><button class="warning" onclick="editarVentana('${v.id}', '${empleadoId}')">✏️ Editar</button>${btnAnular}</div>`;
+            } else if (puedeAnular) {
+              accionesHtml = `<div class="acciones">${btnAnular}</div>`;
+            }
+            
             item.innerHTML = `<div class="fechas">Solicitud ${i+1}: ${formatearFecha(new Date(v.inicio))} - ${formatearFecha(new Date(v.fin))}</div>${estadoHtml}<div class="dias-info">💼 ${calcularDiasHabiles(v.inicio, v.fin)} días hábiles | 📅 ${calcularDiasNaturales(v.inicio, v.fin)} días naturales</div>${razonHtml}${accionesHtml}`;
             contenido.appendChild(item);
           });
@@ -833,7 +884,7 @@
 
     function actualizarResumen() {
       const r = document.getElementById('resumen-seleccion'); const bg = document.getElementById('btn-guardar'); const bl = document.getElementById('btn-limpiar');
-      if (!diaInicio) { r.innerHTML = '💡 Haz clic en el <strong>día de inicio</strong> y luego en el <strong>día de fin</strong> (mínimo 7 días naturales).'; bg.style.display = 'none'; bl.style.display = 'none'; }
+      if (!diaInicio) { r.innerHTML = ' Haz clic en el <strong>día de inicio</strong> y luego en el <strong>día de fin</strong> (mínimo 7 días naturales).'; bg.style.display = 'none'; bl.style.display = 'none'; }
       else if (!diaFin) { r.innerHTML = `📅 <strong>Inicio:</strong> ${formatearFecha(diaInicio)} <span style="color:#f39c12;">(seleccionado)</span><br>💡 Cambia de mes si es necesario y haz clic en el <strong>día de fin</strong>.`; bg.style.display = 'none'; bl.style.display = 'inline-block'; }
       else {
         const diasN = calcularDiasNaturales(diaInicio, diaFin), diasH = calcularDiasHabiles(diaInicio, diaFin);
@@ -877,9 +928,10 @@
         console.log('📧 Enviando email...', templateParams);
 
         if (typeof emailjs === 'undefined') {
-          m.textContent = `⏳ Solicitud registrada (EmailJS no cargado)`;
+          m.textContent = ` Solicitud registrada (EmailJS no cargado)`;
           m.className = 'warning-msg';
         } else {
+          // ✅ CORREGIDO: service_exzuwwi (NO service_m8s780p)
           emailjs.send('service_exzuwwi', 'do94359', templateParams)
             .then(function(response) {
               console.log('✅ Email enviado:', response.status, response.text);
@@ -887,7 +939,7 @@
               m.className = 'warning-msg';
             }, function(error) {
               console.error('❌ Error EmailJS:', error);
-              m.textContent = `⏳ Solicitud registrada (Error email: ${error.text || 'desconocido'})`;
+              m.textContent = ` Solicitud registrada (Error email: ${error.text || 'desconocido'})`;
               m.className = 'warning-msg';
             });
         }
@@ -919,7 +971,7 @@
           const empleadoId = e.id;
           b.onclick = () => {
             try {
-              constemps = cargarEmpleados();
+              const emps = cargarEmpleados();
               const empIndex = emps.findIndex(emp => emp.id === empleadoId);
               if (empIndex !== -1) {
                 emps[empIndex].estado = emps[empIndex].estado === 'activo' ? 'baja' : 'activo';
