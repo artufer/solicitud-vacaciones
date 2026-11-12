@@ -5,12 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vacaciones Pabellón Niño Jesús</title>
   
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-  <script type="text/javascript">
-    (function() {
-      emailjs.init("HhTaoxZGy2zC2YXSI");
-    })();
-  </script>
+<script type="module">
+  import emailjs from 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+  window.emailjs = emailjs;
+  emailjs.init({ publicKey: "HhTaoxZGy2zC2YXSI" });
+</script>
 
   <style>
     * { box-sizing: border-box; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
