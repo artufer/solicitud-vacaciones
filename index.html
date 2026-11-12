@@ -660,55 +660,61 @@
       inicializarTabs();
     }
 
-    function renderizarSidebarEstado() {
-      try {
-        const cont = document.getElementById('sidebar-estado');
-        if (!cont) return;
-        
-        const empleados = cargarEmpleados();
-        
-        const solicitudes = cargarSolicitudes().filter(s => {
-          const emp = empleados.find(e => e.id === s.empleadoId);
-          if (!emp || emp.estado !== 'activo') return false;
-          if (usuarioActual.rol === 'admin') return true;
-          return s.empleadoId === usuarioActual.id;
-        });
+function renderizarSidebarEstado() {
+  try {
+    const cont = document.getElementById('sidebar-estado');
+    if (!cont) return;
+    
+    const empleados = cargarEmpleados();
+    
+    const solicitudes = cargarSolicitudes().filter(s => {
+      const emp = empleados.find(e => e.id === s.empleadoId);
+      if (!emp || emp.estado !== 'activo') return false;
+      if (usuarioActual.rol === 'admin') return true;
+      return s.empleadoId === usuarioActual.id;
+    });
 
-        if (solicitudes.length === 0) {
-          cont.innerHTML = '<div class="sin-estado">No hay solicitudes</div>';
-          return;
-        }
-
-        cont.innerHTML = '';
-
-        solicitudes.forEach(s => {
-          const emp = empleados.find(e => e.id === s.empleadoId);
-          if (!emp) return;
-
-          const diasHabiles = calcularDiasHabiles(s.inicio, s.fin);
-          const diasNaturales = calcularDiasNaturales(s.inicio, s.fin);
-
-          const item = document.createElement('div');
-          item.className = `estado-item ${s.estado}`;
-          
-          let estadoTexto = '';
-          if (s.estado === 'pendiente') estadoTexto = '⏳ Pendiente';
-          else if (s.estado === 'aprobada') estadoTexto = '✅ Aprobada';
-          else if (s.estado === 'rechazada') estadoTexto = '❌ Rechazada';
-
-          item.innerHTML = `
-            <div class="titulo">${emp.nombre.split(' ').slice(0,2).join(' ')}</div>
-            <div class="fechas">${formatearFecha(new Date(s.inicio))} - ${formatearFecha(new Date(s.fin))}</div>
-            <div class="fechas">${diasHabiles} días hábiles | ${diasNaturales} naturales</div>
-            <span class="estado-badge ${s.estado}">${estadoTexto}</span>
-          `;
-          cont.appendChild(item);
-        });
-      } catch(e) {
-        console.error('Error en renderizarSidebarEstado:', e);
-      }
+    if (solicitudes.length === 0) {
+      cont.innerHTML = '<div class="sin-estado">No hay solicitudes</div>';
+      return;
     }
 
+    cont.innerHTML = '';
+
+    solicitudes.forEach(s => {
+      const emp = empleados.find(e => e.id === s.empleadoId);
+      if (!emp) return;
+
+      const diasHabiles = calcularDiasHabiles(s.inicio, s.fin);
+      const diasNaturales = calcularDiasNaturales(s.inicio, s.fin);
+
+      const item = document.createElement('div');
+      item.className = `estado-item ${s.estado}`;
+      
+      let estadoTexto = '';
+      if (s.estado === 'pendiente') estadoTexto = '⏳ Pendiente';
+      else if (s.estado === 'aprobada') estadoTexto = '✅ Aprobada';
+      else if (s.estado === 'rechazada') estadoTexto = '❌ Rechazada';
+
+      // ✅ AÑADIDO: Mostrar motivo si está rechazada
+      let razonHtml = '';
+      if (s.estado === 'rechazada' && s.razonRechazo) {
+        razonHtml = `<div style="margin-top:6px; padding:6px; background:#fadbd8; border-radius:4px; font-size:11px; color:#c0392b;"><strong>Motivo:</strong> ${s.razonRechazo}</div>`;
+      }
+
+      item.innerHTML = `
+        <div class="titulo">${emp.nombre.split(' ').slice(0,2).join(' ')}</div>
+        <div class="fechas">${formatearFecha(new Date(s.inicio))} - ${formatearFecha(new Date(s.fin))}</div>
+        <div class="fechas">${diasHabiles} días hábiles | ${diasNaturales} naturales</div>
+        <span class="estado-badge ${s.estado}">${estadoTexto}</span>
+        ${razonHtml}
+      `;
+      cont.appendChild(item);
+    });
+  } catch(e) {
+    console.error('Error en renderizarSidebarEstado:', e);
+  }
+}
     function renderizarNotificaciones() {
       try {
         const cont = document.getElementById('lista-notificaciones');
