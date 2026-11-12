@@ -1379,50 +1379,64 @@
       document.getElementById('btn-rotar').onclick = rotarOrdenLimpieza;
     }
 
-    function renderizarListaEstados() {
-      try {
-        const c = document.getElementById('lista-estados');
-        if (!c) return;
-        
-        c.innerHTML = '';
-        const empleados = cargarEmpleados();
-        
-        empleados.forEach((e, index) => {
-          const d = document.createElement('div');
-          d.className = `empleado-estado ${e.estado === 'baja' ? 'baja' : ''}`;
-          d.innerHTML = `<span>${e.nombre}</span><span class="estado-badge estado-${e.estado}">${e.estado.toUpperCase()}</span>`;
-          const b = document.createElement('button');
-          b.textContent = e.estado === 'activo' ? 'Poner de baja' : 'Reactivar';
-          b.style.cssText = `background:${e.estado === 'activo' ? '#e74c3c' : '#27ae60'}; padding:6px 12px; font-size:12px; margin:0;`;
-          b.onclick = () => { 
-            try {
-              console.log('Cambiando estado de:', e.nombre, 'de', e.estado, 'a', e.estado === 'activo' ? 'baja' : 'activo');
-              e.estado = e.estado === 'activo' ? 'baja' : 'activo'; 
-              const empleadosActualizados = cargarEmpleados();
-              const empIndex = empleadosActualizados.findIndex(emp => emp.id === e.id);
-              if (empIndex !== -1) {
-                empleadosActualizados[empIndex].estado = e.estado;
-              }
-              guardarEmpleados(empleadosActualizados); 
-              console.log('Estado actualizado y guardado');
-              renderizarListaEstados(); 
-              renderizarInfoDias();
-              renderizarNotificaciones();
-              renderizarSidebarEstado();
-              console.log('Todas las funciones de renderizado completadas');
-            } catch(err) {
-              console.error('Error al cambiar estado:', err);
-              alert('Error al cambiar el estado: ' + err.message);
-            }
-          };
-          d.appendChild(b);
-          c.appendChild(d);
-        });
-      } catch(e) {
-        console.error('Error en renderizarListaEstados:', e);
-      }
-    }
-
+function renderizarListaEstados() {
+  try {
+    const c = document.getElementById('lista-estados');
+    if (!c) return;
+    
+    c.innerHTML = '';
+    const empleados = cargarEmpleados();
+    
+    empleados.forEach((e) => {
+      const d = document.createElement('div');
+      d.className = `empleado-estado ${e.estado === 'baja' ? 'baja' : ''}`;
+      d.innerHTML = `<span>${e.nombre}</span><span class="estado-badge estado-${e.estado}">${e.estado.toUpperCase()}</span>`;
+      const b = document.createElement('button');
+      b.textContent = e.estado === 'activo' ? 'Poner de baja' : 'Reactivar';
+      b.style.cssText = `background:${e.estado === 'activo' ? '#e74c3c' : '#27ae60'}; padding:6px 12px; font-size:12px; margin:0;`;
+      
+      // Usar closure para capturar el ID del empleado
+      const empleadoId = e.id;
+      b.onclick = () => { 
+        try {
+          console.log('Cambiando estado de empleado ID:', empleadoId);
+          
+          // Cargar empleados frescos del localStorage
+          const empleadosActualizados = cargarEmpleados();
+          const empIndex = empleadosActualizados.findIndex(emp => emp.id === empleadoId);
+          
+          if (empIndex !== -1) {
+            const nuevoEstado = empleadosActualizados[empIndex].estado === 'activo' ? 'baja' : 'activo';
+            console.log('Cambiando de', empleadosActualizados[empIndex].estado, 'a', nuevoEstado);
+            
+            empleadosActualizados[empIndex].estado = nuevoEstado;
+            guardarEmpleados(empleadosActualizados);
+            
+            console.log('Estado actualizado y guardado correctamente');
+            
+            // Re-renderizar todo
+            renderizarListaEstados(); 
+            renderizarInfoDias();
+            renderizarNotificaciones();
+            renderizarSidebarEstado();
+            
+            console.log('Todas las funciones de renderizado completadas');
+          } else {
+            console.error('Empleado no encontrado con ID:', empleadoId);
+          }
+        } catch(err) {
+          console.error('Error al cambiar estado:', err);
+          alert('Error al cambiar el estado: ' + err.message);
+        }
+      };
+      
+      d.appendChild(b);
+      c.appendChild(d);
+    });
+  } catch(e) {
+    console.error('Error en renderizarListaEstados:', e);
+  }
+}
     function rotarOrdenLimpieza() {
       try {
         if (!confirm('¿Avanzar orden de prioridad?')) return;
