@@ -883,7 +883,7 @@
           m.textContent = `⏳ Solicitud registrada (EmailJS no cargado)`;
           m.className = 'warning-msg';
         } else {
-          emailjs.send('service_oyu236o', 'zfp0hyl', templateParams)
+          emailjs.send('service_oyu236o', 'template_omx4fns', templateParams)
             .then(function(response) {
               console.log('✅ Email enviado:', response.status, response.text);
               m.textContent = `⏳ Solicitud registrada como PENDIENTE. Email enviado al administrador.`;
