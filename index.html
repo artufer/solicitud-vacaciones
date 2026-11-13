@@ -541,23 +541,76 @@
       } catch(e) { console.error('Error en renderizarSidebarEstado:', e); }
     }
 
-    function anularSolicitud(sid) {
-      if (!confirm('¿Estás seguro de anular esta solicitud? Esta acción no se puede deshacer.')) return;
-      try {
-        const sol = cargarSolicitudes();
-        const idx = sol.findIndex(s => s.id === sid);
-        if (idx !== -1) {
-          sol.splice(idx, 1);
-          guardarSolicitudes(sol);
-          renderizarSidebarEstado();
-          renderizarInfoDias();
-          renderizarCalendario4x3();
-          if (usuarioActual.rol === 'admin') renderizarNotificaciones();
-          alert('✅ Solicitud anulada correctamente');
-        }
-      } catch(e) { console.error(e); alert('Error al anular'); }
-    }
+function anularSolicitud(sid) {
+  if (!confirm('¿Estás seguro de anular esta solicitud? Esta acción no se puede deshacer.')) return;
+  try {
+    const sol = cargarSolicitudes();
+    const idx = sol.findIndex(s => s.id === sid);
+    if (idx !== -1) {
+      // ✅ Guardar datos de la solicitud antes de eliminarla
+      const solicitudAnulada = sol[idx];
+      const emp = cargarEmpleados().find(e => e.id === solicitudAnulada.empleadoId);
+      
+      // ✅ Eliminar la solicitud
+      sol.splice(idx, 1);
+      guardarSolicitudes(sol);
+      renderizarSidebarEstado();
+      renderizarInfoDias();
+      renderizarCalendario4x3();
+      if (usuarioActual.rol === 'admin') renderizarNotificaciones();
+      
+      // ✅ Enviar email de notificación de anulación
+      if (emp) {
+        const asunto = `ANULACIÓN: ${emp.nombre} - ${formatearFecha(new Date(solicitudAnulada.inicio))} al ${formatearFecha(new Date(solicitudAnulada.fin))}`;
+        const mensaje = `Hola Leonardo,
 
+Se ha ANULADO una solicitud de vacaciones:
+
+Empleado: ${emp.nombre}
+Gremio: ${emp.gremio === 'ordenanzas' ? 'Ordenanza' : 'Limpieza'}
+Fechas: Del ${formatearFecha(new Date(solicitudAnulada.inicio))} al ${formatearFecha(new Date(solicitudAnulada.fin))}
+Días hábiles: ${calcularDiasHabiles(solicitudAnulada.inicio, solicitudAnulada.fin)}
+Días naturales: ${calcularDiasNaturales(solicitudAnulada.inicio, solicitudAnulada.fin)}
+Estado anterior: ${solicitudAnulada.estado === 'aprobada' ? '✅ APROBADA' : solicitudAnulada.estado === 'pendiente' ? '⏳ PENDIENTE' : '❌ RECHAZADA'}
+Anulada por: ${usuarioActual.nombre}
+
+La solicitud ha sido eliminada del sistema.
+
+Saludos,
+Sistema de Vacaciones Pabellón Niño Jesús`;
+
+        console.log('📧 Enviando email de anulación con FormSubmit...');
+
+        fetch('https://formsubmit.co/ajax/artufer@gmail.com', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            _subject: asunto,
+            _template: 'table',
+            Empleado: emp.nombre,
+            Gremio: emp.gremio === 'ordenanzas' ? 'Ordenanza' : 'Limpieza',
+            'Fecha inicio': formatearFecha(new Date(solicitudAnulada.inicio)),
+            'Fecha fin': formatearFecha(new Date(solicitudAnulada.fin)),
+            'Días hábiles': calcularDiasHabiles(solicitudAnulada.inicio, solicitudAnulada.fin),
+            'Días naturales': calcularDiasNaturales(solicitudAnulada.inicio, solicitudAnulada.fin),
+            'Estado anterior': solicitudAnulada.estado === 'aprobada' ? 'Aprobada' : solicitudAnulada.estado === 'pendiente' ? 'Pendiente' : 'Rechazada',
+            'Anulada por': usuarioActual.nombre,
+            Mensaje: mensaje
+          })
+        })
+        .then(response => response.json())
+        .then(result => {
+          console.log('✅ Email de anulación enviado:', result);
+        })
+        .catch(error => {
+          console.error('❌ Error enviando email de anulación:', error);
+        });
+      }
+      
+      alert('✅ Solicitud anulada correctamente');
+    }
+  } catch(e) { console.error(e); alert('Error al anular'); }
+}
     function renderizarNotificaciones() {
       try {
         const cont = document.getElementById('lista-notificaciones');
