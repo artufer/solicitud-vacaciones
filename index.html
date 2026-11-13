@@ -29,8 +29,8 @@
     .badge-notif.visible { display: inline-block; }
 
     .tabs-container { max-width: 1400px; margin: 0 auto; padding: 0 20px; }
-    .tabs { display: flex; background: white; border-bottom: 2px solid #ddd; border-radius: 8px 8px 0 0; margin-top: 20px; overflow: hidden; }
-    .tab { flex: 1; padding: 15px 20px; text-align: center; cursor: pointer; font-weight: bold; font-size: 16px; color: #7f8c8d; background: #ecf0f1; border: none; transition: all 0.2s; }
+    .tabs { display: flex; background: white; border-bottom: 2px solid #ddd; border-radius: 8px 8px 0 0; margin-top: 20px; overflow: hidden; flex-wrap: wrap; }
+    .tab { flex: 1; padding: 15px 20px; text-align: center; cursor: pointer; font-weight: bold; font-size: 16px; color: #7f8c8d; background: #ecf0f1; border: none; transition: all 0.2s; min-width: 150px; }
     .tab:hover { background: #d5dbdb; color: #2c3e50; }
     .tab.active { background: #3498db; color: white; }
     .tab.hidden { display: none; }
@@ -218,6 +218,7 @@
       <div class="tabs">
         <button class="tab hidden" data-tab="admin" id="tab-btn-admin">⚙️ Administración</button>
         <button class="tab" data-tab="solicitar" id="tab-btn-solicitar">📝 Solicitar vacaciones</button>
+        <button class="tab" data-tab="asuntos" id="tab-btn-asuntos">📋 Asuntos propios</button>
         <button class="tab" data-tab="calendario" id="tab-btn-calendario">📅 Calendario</button>
       </div>
 
@@ -238,7 +239,7 @@
       <div class="tab-content" id="tab-solicitar">
         <div class="solicitar-container">
           <div class="estado-sidebar">
-            <h3>📋 Estado de solicitudes</h3>
+            <h3>📋 Estado de solicitudes de vacaciones</h3>
             <div id="sidebar-estado"><div class="sin-estado">No hay solicitudes</div></div>
           </div>
           <section>
@@ -261,6 +262,39 @@
               <button id="btn-limpiar" class="secondary" style="display:none;">🗑️ Limpiar selección</button>
             </div>
             <p id="mensaje"></p>
+          </section>
+        </div>
+      </div>
+
+      <!-- PESTAÑA: ASUNTOS PROPIOS -->
+      <div class="tab-content" id="tab-asuntos">
+        <div class="solicitar-container">
+          <div class="estado-sidebar">
+            <h3>📋 Estado de asuntos propios</h3>
+            <div id="sidebar-asuntos"><div class="sin-estado">No hay solicitudes</div></div>
+          </div>
+          <section>
+            <h2>📋 Solicitar Asuntos Propios</h2>
+            <div class="info" style="background:#fff3cd; border:2px solid #f39c12;">
+              <strong>ℹ️ Información:</strong> Cada empleado dispone de un número específico de días para asuntos propios en 2027.
+            </div>
+            <label id="label-empleado-asuntos">Empleado: <select id="empleado-asuntos"></select></label>
+            <div class="info-dias" id="info-dias-asuntos">
+              <h4>📊 Días de asuntos propios disponibles (clic para ver/editar)</h4>
+              <div class="info-dias-subtitulo" id="info-dias-subtitulo-asuntos"></div>
+              <div class="info-dias-grid" id="info-dias-grid-asuntos"></div>
+            </div>
+            <div class="selector-mes">
+              <label>Día: <input type="date" id="dia-asunto" min="2027-01-01" max="2028-01-31"></label>
+            </div>
+            <div class="resumen-seleccion" id="resumen-asuntos">
+              💡 Selecciona un día laborable para solicitarlo como asunto propio.
+            </div>
+            <div class="botones-accion">
+              <button id="btn-guardar-asunto" style="display:none;">✅ Solicitar asunto propio</button>
+              <button id="btn-limpiar-asunto" class="secondary" style="display:none;">🗑️ Limpiar</button>
+            </div>
+            <p id="mensaje-asuntos"></p>
           </section>
         </div>
       </div>
@@ -300,16 +334,16 @@
   <script>
     const CONFIG = {
       empleados: [
-        { id: 'leo', nombre: 'Leonardo Arturo Fernández Carbajo', gremio: 'ordenanzas', rol: 'admin', estado: 'activo', password: 'leo123', diasDisponibles: 26 },
-        { id: 'elena', nombre: 'María Elena Arjones Porto', gremio: 'ordenanzas', rol: 'empleado', estado: 'activo', password: 'elena123', diasDisponibles: 25 },
-        { id: 'carlos', nombre: 'Carlos Macia Torralba', gremio: 'ordenanzas', rol: 'empleado', estado: 'activo', password: 'carlos123', diasDisponibles: 23 },
-        { id: 'mercedes', nombre: 'Mercedes Sutil García', gremio: 'ordenanzas', rol: 'empleado', estado: 'activo', password: 'mercedes123', diasDisponibles: 25 },
-        { id: 'natal', nombre: 'José Carlos Natal Fernández', gremio: 'limpieza', rol: 'empleado', estado: 'activo', prioridad: 6, password: 'natal123', diasDisponibles: 26 },
-        { id: 'mariangeles', nombre: 'María Ángeles Yagüe Fernández', gremio: 'limpieza', rol: 'empleado', estado: 'activo', prioridad: 1, password: 'mariangeles123', diasDisponibles: 26 },
-        { id: 'yolanda', nombre: 'Yolanda Fernández Álvarez', gremio: 'limpieza', rol: 'empleado', estado: 'activo', prioridad: 2, password: 'yolanda123', diasDisponibles: 26 },
-        { id: 'claudia', nombre: 'Claudia Baza Carrera', gremio: 'limpieza', rol: 'empleado', estado: 'activo', prioridad: 3, password: 'claudia123', diasDisponibles: 25 },
-        { id: 'rocio', nombre: 'Rocio Ordoñez Robles', gremio: 'limpieza', rol: 'empleado', estado: 'activo', prioridad: 4, password: 'rocio123', diasDisponibles: 23 },
-        { id: 'raquel', nombre: 'Raquel Martínez Álvarez', gremio: 'limpieza', rol: 'empleado', estado: 'activo', prioridad: 5, password: 'raquel123', diasDisponibles: 23 }
+        { id: 'leo', nombre: 'Leonardo Arturo Fernández Carbajo', gremio: 'ordenanzas', rol: 'admin', estado: 'activo', password: 'leo123', diasDisponibles: 26, diasAsuntosPropios: 14 },
+        { id: 'elena', nombre: 'María Elena Arjones Porto', gremio: 'ordenanzas', rol: 'empleado', estado: 'activo', password: 'elena123', diasDisponibles: 25, diasAsuntosPropios: 10 },
+        { id: 'carlos', nombre: 'Carlos Macia Torralba', gremio: 'ordenanzas', rol: 'empleado', estado: 'activo', password: 'carlos123', diasDisponibles: 23, diasAsuntosPropios: 8 },
+        { id: 'mercedes', nombre: 'Mercedes Sutil García', gremio: 'ordenanzas', rol: 'empleado', estado: 'activo', password: 'mercedes123', diasDisponibles: 25, diasAsuntosPropios: 9 },
+        { id: 'natal', nombre: 'José Carlos Natal Fernández', gremio: 'limpieza', rol: 'empleado', estado: 'activo', prioridad: 6, password: 'natal123', diasDisponibles: 26, diasAsuntosPropios: 11 },
+        { id: 'mariangeles', nombre: 'María Ángeles Yagüe Fernández', gremio: 'limpieza', rol: 'empleado', estado: 'activo', prioridad: 1, password: 'mariangeles123', diasDisponibles: 26, diasAsuntosPropios: 11 },
+        { id: 'yolanda', nombre: 'Yolanda Fernández Álvarez', gremio: 'limpieza', rol: 'empleado', estado: 'activo', prioridad: 2, password: 'yolanda123', diasDisponibles: 26, diasAsuntosPropios: 11 },
+        { id: 'claudia', nombre: 'Claudia Baza Carrera', gremio: 'limpieza', rol: 'empleado', estado: 'activo', prioridad: 3, password: 'claudia123', diasDisponibles: 25, diasAsuntosPropios: 10 },
+        { id: 'rocio', nombre: 'Rocio Ordoñez Robles', gremio: 'limpieza', rol: 'empleado', estado: 'activo', prioridad: 4, password: 'rocio123', diasDisponibles: 23, diasAsuntosPropios: 8 },
+        { id: 'raquel', nombre: 'Raquel Martínez Álvarez', gremio: 'limpieza', rol: 'empleado', estado: 'activo', prioridad: 5, password: 'raquel123', diasDisponibles: 23, diasAsuntosPropios: 8 }
       ],
       reglas: { ordenanzas: { maxAusentes: 2 }, limpieza: { maxAusentes: 3 } },
       periodoVacaciones: { inicio: '2027-01-01', fin: '2028-01-31' },
@@ -366,11 +400,24 @@
     }
 
     function obtenerVentanasEmpleado(id) { 
-      try { return cargarSolicitudes().filter(s => s.empleadoId === id && s.estado === 'aprobada'); } catch(e) { return []; }
+      try { return cargarSolicitudes().filter(s => s.empleadoId === id && s.estado === 'aprobada' && s.tipo === 'vacaciones'); } catch(e) { return []; }
     }
 
     function calcularDiasUsados(id) { 
       try { return obtenerVentanasEmpleado(id).reduce((t, v) => t + calcularDiasHabiles(v.inicio, v.fin), 0); } catch(e) { return 0; }
+    }
+
+    function obtenerAsuntosEmpleado(id) { 
+      try { return cargarSolicitudes().filter(s => s.empleadoId === id && s.estado === 'aprobada' && s.tipo === 'asuntos'); } catch(e) { return []; }
+    }
+
+    function calcularDiasAsuntosUsados(id) { 
+      try { return obtenerAsuntosEmpleado(id).length; } catch(e) { return 0; }
+    }
+
+    function obtenerDiasAsuntosEmpleado(id) {
+      const emp = cargarEmpleados().find(e => e.id === id);
+      return emp ? emp.diasAsuntosPropios : 4;
     }
 
     function contarAusentesEnRango(gremio, inicio, fin, excluirId) {
@@ -425,6 +472,24 @@
       } catch(e) { return { ok: false, msg: 'Error al validar' }; }
     }
 
+    function validarAsuntoPropio(empleadoId, fecha) {
+      try {
+        const empleados = cargarEmpleados();
+        const empleado = empleados.find(e => e.id === empleadoId);
+        if (!empleado) return { ok: false, msg: 'Empleado no reconocido' };
+        if (empleado.estado === 'baja') return { ok: false, msg: `❌ ${empleado.nombre} está de baja.` };
+        if (fecha < CONFIG.periodoVacaciones.inicio || fecha > CONFIG.periodoVacaciones.fin) return { ok: false, msg: '❌ Fuera del periodo' };
+        const f = new Date(fecha);
+        if (esDiaNoLaborable(f)) return { ok: false, msg: '❌ No se puede solicitar en festivo o fin de semana' };
+        const diasMaximos = obtenerDiasAsuntosEmpleado(empleadoId);
+        const diasUsados = calcularDiasAsuntosUsados(empleadoId);
+        if (diasUsados >= diasMaximos) return { ok: false, msg: `❌ Ya has usado los ${diasMaximos} días de asuntos propios` };
+        const yaExiste = cargarSolicitudes().some(s => s.empleadoId === empleadoId && s.tipo === 'asuntos' && s.inicio === fecha && s.estado !== 'rechazada');
+        if (yaExiste) return { ok: false, msg: '❌ Ya tienes un asunto propio solicitado ese día' };
+        return { ok: true };
+      } catch(e) { return { ok: false, msg: 'Error al validar' }; }
+    }
+
     function inicializarLogin() {
       const select = document.getElementById('selector-usuario');
       cargarEmpleados().forEach(emp => {
@@ -474,7 +539,8 @@
       document.getElementById(`tab-${pestañaPorDefecto}`).classList.add('active');
 
       if (pestañaPorDefecto === 'admin') { inicializarPanelAdmin(); renderizarNotificaciones(); }
-      else { renderizarCalendarioInteractivo(); renderizarInfoDias(); renderizarSidebarEstado(); }
+      else if (pestañaPorDefecto === 'solicitar') { renderizarCalendarioInteractivo(); renderizarInfoDias(); renderizarSidebarEstado(); }
+      else if (pestañaPorDefecto === 'asuntos') { renderizarInfoDiasAsuntos(); renderizarSidebarAsuntos(); }
       renderizarCalendario4x3();
 
       document.querySelectorAll('.tab').forEach(tab => {
@@ -486,6 +552,7 @@
           document.getElementById(`tab-${tabId}`).classList.add('active');
           if (tabId === 'admin') { inicializarPanelAdmin(); renderizarNotificaciones(); }
           else if (tabId === 'solicitar') { renderizarCalendarioInteractivo(); renderizarInfoDias(); renderizarSidebarEstado(); }
+          else if (tabId === 'asuntos') { renderizarInfoDiasAsuntos(); renderizarSidebarAsuntos(); }
           else if (tabId === 'calendario') renderizarCalendario4x3();
         });
       });
@@ -501,6 +568,7 @@
       document.getElementById('user-info').innerHTML = `👤 <strong>${usuarioActual.nombre}</strong> (${usuarioActual.gremio})`;
       document.getElementById('btn-salir').onclick = cerrarSesion;
       configurarFormulario();
+      configurarFormularioAsuntos();
 
       if (usuarioActual.gremio === 'limpieza') {
         const turno = obtenerTurnoActualLimpieza();
@@ -510,12 +578,15 @@
       inicializarTabs();
     }
 
+    // ===== FUNCIONES VACACIONES =====
+
     function renderizarSidebarEstado() {
       try {
         const cont = document.getElementById('sidebar-estado');
         if (!cont) return;
         const empleados = cargarEmpleados();
         const solicitudes = cargarSolicitudes().filter(s => {
+          if (s.tipo !== 'vacaciones') return false;
           const emp = empleados.find(e => e.id === s.empleadoId);
           if (!emp || emp.estado !== 'activo') return false;
           if (usuarioActual.rol === 'admin') return true;
@@ -541,36 +612,35 @@
       } catch(e) { console.error('Error en renderizarSidebarEstado:', e); }
     }
 
-function anularSolicitud(sid) {
-  if (!confirm('¿Estás seguro de anular esta solicitud? Esta acción no se puede deshacer.')) return;
-  try {
-    const sol = cargarSolicitudes();
-    const idx = sol.findIndex(s => s.id === sid);
-    if (idx !== -1) {
-      // ✅ Guardar datos de la solicitud antes de eliminarla
-      const solicitudAnulada = sol[idx];
-      const emp = cargarEmpleados().find(e => e.id === solicitudAnulada.empleadoId);
-      
-      // ✅ Eliminar la solicitud
-      sol.splice(idx, 1);
-      guardarSolicitudes(sol);
-      renderizarSidebarEstado();
-      renderizarInfoDias();
-      renderizarCalendario4x3();
-      if (usuarioActual.rol === 'admin') renderizarNotificaciones();
-      
-      // ✅ Enviar email de notificación de anulación
-      if (emp) {
-        const asunto = `ANULACIÓN: ${emp.nombre} - ${formatearFecha(new Date(solicitudAnulada.inicio))} al ${formatearFecha(new Date(solicitudAnulada.fin))}`;
-        const mensaje = `Hola Leonardo,
+    function anularSolicitud(sid) {
+      if (!confirm('¿Estás seguro de anular esta solicitud? Esta acción no se puede deshacer.')) return;
+      try {
+        const sol = cargarSolicitudes();
+        const idx = sol.findIndex(s => s.id === sid);
+        if (idx !== -1) {
+          const solicitudAnulada = sol[idx];
+          const emp = cargarEmpleados().find(e => e.id === solicitudAnulada.empleadoId);
+          sol.splice(idx, 1);
+          guardarSolicitudes(sol);
+          renderizarSidebarEstado();
+          renderizarInfoDias();
+          renderizarInfoDiasAsuntos();
+          renderizarCalendario4x3();
+          renderizarSidebarAsuntos();
+          if (usuarioActual.rol === 'admin') renderizarNotificaciones();
+          
+          if (emp) {
+            const tipoTexto = solicitudAnulada.tipo === 'asuntos' ? 'ASUNTO PROPIO' : 'VACACIONES';
+            const asunto = `ANULACIÓN ${tipoTexto}: ${emp.nombre} - ${formatearFecha(new Date(solicitudAnulada.inicio))}${solicitudAnulada.tipo === 'vacaciones' ? ' al ' + formatearFecha(new Date(solicitudAnulada.fin)) : ''}`;
+            const mensaje = `Hola Leonardo,
 
-Se ha ANULADO una solicitud de vacaciones:
+Se ha ANULADO una solicitud de ${tipoTexto.toLowerCase()}:
 
 Empleado: ${emp.nombre}
 Gremio: ${emp.gremio === 'ordenanzas' ? 'Ordenanza' : 'Limpieza'}
-Fechas: Del ${formatearFecha(new Date(solicitudAnulada.inicio))} al ${formatearFecha(new Date(solicitudAnulada.fin))}
+${solicitudAnulada.tipo === 'vacaciones' ? `Fechas: Del ${formatearFecha(new Date(solicitudAnulada.inicio))} al ${formatearFecha(new Date(solicitudAnulada.fin))}
 Días hábiles: ${calcularDiasHabiles(solicitudAnulada.inicio, solicitudAnulada.fin)}
-Días naturales: ${calcularDiasNaturales(solicitudAnulada.inicio, solicitudAnulada.fin)}
+Días naturales: ${calcularDiasNaturales(solicitudAnulada.inicio, solicitudAnulada.fin)}` : `Fecha: ${formatearFecha(new Date(solicitudAnulada.inicio))}`}
 Estado anterior: ${solicitudAnulada.estado === 'aprobada' ? '✅ APROBADA' : solicitudAnulada.estado === 'pendiente' ? '⏳ PENDIENTE' : '❌ RECHAZADA'}
 Anulada por: ${usuarioActual.nombre}
 
@@ -579,38 +649,30 @@ La solicitud ha sido eliminada del sistema.
 Saludos,
 Sistema de Vacaciones Pabellón Niño Jesús`;
 
-        console.log('📧 Enviando email de anulación con FormSubmit...');
-
-        fetch('https://formsubmit.co/ajax/artufer@gmail.com', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({
-            _subject: asunto,
-            _template: 'table',
-            Empleado: emp.nombre,
-            Gremio: emp.gremio === 'ordenanzas' ? 'Ordenanza' : 'Limpieza',
-            'Fecha inicio': formatearFecha(new Date(solicitudAnulada.inicio)),
-            'Fecha fin': formatearFecha(new Date(solicitudAnulada.fin)),
-            'Días hábiles': calcularDiasHabiles(solicitudAnulada.inicio, solicitudAnulada.fin),
-            'Días naturales': calcularDiasNaturales(solicitudAnulada.inicio, solicitudAnulada.fin),
-            'Estado anterior': solicitudAnulada.estado === 'aprobada' ? 'Aprobada' : solicitudAnulada.estado === 'pendiente' ? 'Pendiente' : 'Rechazada',
-            'Anulada por': usuarioActual.nombre,
-            Mensaje: mensaje
-          })
-        })
-        .then(response => response.json())
-        .then(result => {
-          console.log('✅ Email de anulación enviado:', result);
-        })
-        .catch(error => {
-          console.error('❌ Error enviando email de anulación:', error);
-        });
-      }
-      
-      alert('✅ Solicitud anulada correctamente');
+            console.log('📧 Enviando email de anulación...');
+            fetch('https://formsubmit.co/ajax/artufer@gmail.com', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify({
+                _subject: asunto,
+                _template: 'table',
+                Tipo: tipoTexto,
+                Empleado: emp.nombre,
+                Gremio: emp.gremio === 'ordenanzas' ? 'Ordenanza' : 'Limpieza',
+                'Fecha': formatearFecha(new Date(solicitudAnulada.inicio)),
+                'Anulada por': usuarioActual.nombre,
+                Mensaje: mensaje
+              })
+            })
+            .then(response => response.json())
+            .then(result => console.log('✅ Email de anulación enviado:', result))
+            .catch(error => console.error('❌ Error enviando email de anulación:', error));
+          }
+          alert('✅ Solicitud anulada correctamente');
+        }
+      } catch(e) { console.error(e); alert('Error al anular'); }
     }
-  } catch(e) { console.error(e); alert('Error al anular'); }
-}
+
     function renderizarNotificaciones() {
       try {
         const cont = document.getElementById('lista-notificaciones');
@@ -618,16 +680,20 @@ Sistema de Vacaciones Pabellón Niño Jesús`;
         if (!cont || !badge) return;
         cont.innerHTML = '';
         const empleados = cargarEmpleados();
-        const pendientes = cargarSolicitudes().filter(s => { const emp = empleados.find(e => e.id === s.empleadoId); return s.estado === 'pendiente' && emp && emp.estado === 'activo'; });
+        const pendientes = cargarSolicitudes().filter(s => { 
+          const emp = empleados.find(e => e.id === s.empleadoId); 
+          return s.estado === 'pendiente' && emp && emp.estado === 'activo'; 
+        });
         if (pendientes.length === 0) { cont.innerHTML = '<div class="sin-notificaciones">✅ No hay solicitudes pendientes</div>'; badge.classList.remove('visible'); return; }
         badge.textContent = pendientes.length;
         badge.classList.add('visible');
         pendientes.forEach(p => {
           const emp = empleados.find(e => e.id === p.empleadoId);
           if (!emp) return;
+          const tipoTexto = p.tipo === 'asuntos' ? '📋 Asunto propio' : '🏖️ Vacaciones';
           const item = document.createElement('div');
           item.className = 'notificacion-item';
-          item.innerHTML = `<div class="info-notif">👤 ${emp.nombre} (${emp.gremio})</div><div class="fechas-notif">📅 ${formatearFecha(new Date(p.inicio))} - ${formatearFecha(new Date(p.fin))} (${calcularDiasHabiles(p.inicio, p.fin)} días hábiles)</div><div class="acciones-notif"><button class="aprobar" onclick="aprobarSolicitud('${p.id}')">✅ Aprobar</button><button class="rechazar" onclick="mostrarRazonRechazo('${p.id}')">❌ Rechazar</button></div><input type="text" class="razon-input" id="razon-${p.id}" placeholder="Motivo del rechazo (obligatorio)" style="display:none;"><button class="rechazar" id="btn-confirmar-rechazo-${p.id}" style="display:none; margin-top:8px;" onclick="rechazarSolicitud('${p.id}')">Confirmar rechazo</button>`;
+          item.innerHTML = `<div class="info-notif">${tipoTexto} - 👤 ${emp.nombre} (${emp.gremio})</div><div class="fechas-notif">📅 ${p.tipo === 'vacaciones' ? formatearFecha(new Date(p.inicio)) + ' - ' + formatearFecha(new Date(p.fin)) + ' (' + calcularDiasHabiles(p.inicio, p.fin) + ' días hábiles)' : formatearFecha(new Date(p.inicio))}</div><div class="acciones-notif"><button class="aprobar" onclick="aprobarSolicitud('${p.id}')">✅ Aprobar</button><button class="rechazar" onclick="mostrarRazonRechazo('${p.id}')">❌ Rechazar</button></div><input type="text" class="razon-input" id="razon-${p.id}" placeholder="Motivo del rechazo (obligatorio)" style="display:none;"><button class="rechazar" id="btn-confirmar-rechazo-${p.id}" style="display:none; margin-top:8px;" onclick="rechazarSolicitud('${p.id}')">Confirmar rechazo</button>`;
           cont.appendChild(item);
         });
       } catch(e) { console.error('Error en renderizarNotificaciones:', e); }
@@ -637,7 +703,7 @@ Sistema de Vacaciones Pabellón Niño Jesús`;
       try {
         const sol = cargarSolicitudes();
         const idx = sol.findIndex(s => s.id === id);
-        if (idx !== -1) { sol[idx].estado = 'aprobada'; guardarSolicitudes(sol); renderizarNotificaciones(); renderizarInfoDias(); renderizarCalendario4x3(); renderizarSidebarEstado(); alert('✅ Solicitud aprobada'); }
+        if (idx !== -1) { sol[idx].estado = 'aprobada'; guardarSolicitudes(sol); renderizarNotificaciones(); renderizarInfoDias(); renderizarInfoDiasAsuntos(); renderizarCalendario4x3(); renderizarSidebarEstado(); renderizarSidebarAsuntos(); alert('✅ Solicitud aprobada'); }
       } catch(e) { console.error(e); alert('Error al aprobar'); }
     }
 
@@ -655,7 +721,7 @@ Sistema de Vacaciones Pabellón Niño Jesús`;
         if (!razon) { alert('Debes escribir un motivo'); return; }
         const sol = cargarSolicitudes();
         const idx = sol.findIndex(s => s.id === id);
-        if (idx !== -1) { sol[idx].estado = 'rechazada'; sol[idx].razonRechazo = razon; guardarSolicitudes(sol); renderizarNotificaciones(); renderizarInfoDias(); renderizarCalendario4x3(); renderizarSidebarEstado(); alert('❌ Solicitud rechazada'); }
+        if (idx !== -1) { sol[idx].estado = 'rechazada'; sol[idx].razonRechazo = razon; guardarSolicitudes(sol); renderizarNotificaciones(); renderizarInfoDias(); renderizarInfoDiasAsuntos(); renderizarCalendario4x3(); renderizarSidebarEstado(); renderizarSidebarAsuntos(); alert('❌ Solicitud rechazada'); }
       } catch(e) { console.error(e); alert('Error al rechazar'); }
     }
 
@@ -700,7 +766,7 @@ Sistema de Vacaciones Pabellón Niño Jesús`;
       try {
         const empleado = cargarEmpleados().find(e => e.id === empleadoId);
         if (!empleado) return;
-        const todasSolicitudes = cargarSolicitudes().filter(s => s.empleadoId === empleadoId);
+        const todasSolicitudes = cargarSolicitudes().filter(s => s.empleadoId === empleadoId && s.tipo === 'vacaciones');
         const ventanasAprobadas = obtenerVentanasEmpleado(empleadoId);
         const usados = calcularDiasUsados(empleadoId);
         document.getElementById('modal-titulo').textContent = `Vacaciones de ${empleado.nombre}`;
@@ -757,7 +823,7 @@ Sistema de Vacaciones Pabellón Niño Jesús`;
       try {
         const cont = document.getElementById('calendario-4x3-container'); if (!cont) return;
         cont.innerHTML = '';
-        const sol = cargarSolicitudes().filter(s => s.estado === 'aprobada');
+        const sol = cargarSolicitudes().filter(s => s.estado === 'aprobada' && s.tipo === 'vacaciones');
         const emps = cargarEmpleados();
         const visibles = emps.filter(e => e.estado === 'activo' && (usuarioActual.rol === 'admin' || e.gremio === usuarioActual.gremio));
         const filas = [[0,1,2,3],[4,5,6,7],[8,9,10,11]];
@@ -849,8 +915,8 @@ Sistema de Vacaciones Pabellón Niño Jesús`;
             if (esDiaNoLaborable(fo)) dd.classList.add(fo.getDay() === 0 || fo.getDay() === 6 ? 'fin-de-semana' : 'festivo');
             else {
               if (hoy.toDateString() === fo.toDateString()) dd.classList.add('hoy');
-              if (sol.some(s => s.estado === 'aprobada' && fs >= s.inicio && fs <= s.fin && emps.find(e => e.id === s.empleadoId)?.gremio === usuarioActual.gremio)) dd.classList.add('vacaciones');
-              else if (sol.some(s => s.estado === 'pendiente' && fs >= s.inicio && fs <= s.fin && emps.find(e => e.id === s.empleadoId)?.gremio === usuarioActual.gremio)) dd.classList.add('pendiente');
+              if (sol.some(s => s.estado === 'aprobada' && s.tipo === 'vacaciones' && fs >= s.inicio && fs <= s.fin && emps.find(e => e.id === s.empleadoId)?.gremio === usuarioActual.gremio)) dd.classList.add('vacaciones');
+              else if (sol.some(s => s.estado === 'pendiente' && s.tipo === 'vacaciones' && fs >= s.inicio && fs <= s.fin && emps.find(e => e.id === s.empleadoId)?.gremio === usuarioActual.gremio)) dd.classList.add('pendiente');
               if (diaInicio) { const iD = new Date(diaInicio); if (fo.getTime() === iD.getTime()) { dd.classList.add('inicio'); dd.title = 'Inicio'; } }
               if (diaInicio && diaFin) { const iD = new Date(diaInicio), fD = new Date(diaFin); if (fo.getTime() === fD.getTime()) { dd.classList.add('fin'); dd.title = 'Fin'; } else if (fo > iD && fo < fD) dd.classList.add('rango'); }
               dd.onclick = () => seleccionarDia(fo);
@@ -898,7 +964,7 @@ Sistema de Vacaciones Pabellón Niño Jesús`;
         const emp = cargarEmpleados().find(e => e.id === eid);
         const diasHabiles = calcularDiasHabiles(diaInicio, diaFin);
         const diasNaturales = calcularDiasNaturales(diaInicio, diaFin);
-        const nuevaSolicitud = { id: Date.now().toString(), empleadoId: eid, inicio: ini, fin, estado: 'pendiente', fechaSolicitud: new Date().toISOString() };
+        const nuevaSolicitud = { id: Date.now().toString(), empleadoId: eid, inicio: ini, fin, estado: 'pendiente', fechaSolicitud: new Date().toISOString(), tipo: 'vacaciones' };
         const d = cargarSolicitudes(); d.push(nuevaSolicitud); guardarSolicitudes(d);
 
         const asunto = `Nueva solicitud: ${emp.nombre} - ${formatearFecha(diaInicio)} al ${formatearFecha(diaFin)}`;
@@ -919,8 +985,6 @@ Saludos,
 Sistema de Vacaciones Pabellón Niño Jesús`;
 
         console.log('📧 Enviando email con FormSubmit...');
-
-        // ✅ ENVÍO CON FORMSUBMIT (sin Public Key, sin SDK)
         fetch('https://formsubmit.co/ajax/artufer@gmail.com', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -961,6 +1025,226 @@ Sistema de Vacaciones Pabellón Niño Jesús`;
       } catch(e) { console.error(e); alert('Error al guardar'); }
     }
 
+    // ===== FUNCIONES ASUNTOS PROPIOS =====
+
+    function renderizarSidebarAsuntos() {
+      try {
+        const cont = document.getElementById('sidebar-asuntos');
+        if (!cont) return;
+        const empleados = cargarEmpleados();
+        const solicitudes = cargarSolicitudes().filter(s => {
+          if (s.tipo !== 'asuntos') return false;
+          const emp = empleados.find(e => e.id === s.empleadoId);
+          if (!emp || emp.estado !== 'activo') return false;
+          if (usuarioActual.rol === 'admin') return true;
+          return s.empleadoId === usuarioActual.id;
+        });
+        if (solicitudes.length === 0) { cont.innerHTML = '<div class="sin-estado">No hay solicitudes</div>'; return; }
+        cont.innerHTML = '';
+        solicitudes.forEach(s => {
+          const emp = empleados.find(e => e.id === s.empleadoId);
+          if (!emp) return;
+          const item = document.createElement('div');
+          item.className = `estado-item ${s.estado}`;
+          let estadoTexto = s.estado === 'pendiente' ? '⏳ Pendiente' : s.estado === 'aprobada' ? '✅ Aprobada' : '❌ Rechazada';
+          let razonHtml = '';
+          if (s.estado === 'rechazada' && s.razonRechazo) razonHtml = `<div style="margin-top:6px; padding:6px; background:#fadbd8; border-radius:4px; font-size:11px; color:#c0392b;"><strong>Motivo:</strong> ${s.razonRechazo}</div>`;
+          const puedeAnular = (usuarioActual.rol === 'admin' || s.empleadoId === usuarioActual.id);
+          const btnAnular = puedeAnular ? `<button class="btn-anular" onclick="anularSolicitud('${s.id}')">🗑️ Anular</button>` : '';
+          item.innerHTML = `<div class="titulo">${emp.nombre.split(' ').slice(0,2).join(' ')}</div><div class="fechas">${formatearFecha(new Date(s.inicio))}</div><span class="estado-badge ${s.estado}">${estadoTexto}</span>${razonHtml}${btnAnular}`;
+          cont.appendChild(item);
+        });
+      } catch(e) { console.error('Error en renderizarSidebarAsuntos:', e); }
+    }
+
+    function renderizarInfoDiasAsuntos() {
+      try {
+        const grid = document.getElementById('info-dias-grid-asuntos');
+        const subtitulo = document.getElementById('info-dias-subtitulo-asuntos');
+        if (!grid || !subtitulo) return;
+        grid.innerHTML = '';
+        const empleados = cargarEmpleados();
+        subtitulo.innerHTML = '📅 Cada empleado dispone de un número específico de días para asuntos propios en 2027.';
+
+        const ordenanzas = empleados.filter(e => e.gremio === 'ordenanzas' && e.estado === 'activo' && (usuarioActual.rol === 'admin' || usuarioActual.gremio === 'ordenanzas')).sort((a, b) => a.nombre.localeCompare(b.nombre));
+        if (ordenanzas.length > 0) {
+          const sep = document.createElement('div'); sep.className = 'gremio-separator'; sep.textContent = '👥 Ordenanzas'; grid.appendChild(sep);
+          ordenanzas.forEach(emp => {
+            const diasMax = emp.diasAsuntosPropios || 4;
+            const usados = calcularDiasAsuntosUsados(emp.id);
+            const restantes = diasMax - usados;
+            const item = document.createElement('div'); item.className = 'info-dias-item'; item.onclick = () => abrirModalEmpleadoAsuntos(emp.id);
+            item.innerHTML = `<div class="nombre">${emp.nombre.split(' ').slice(0,2).join(' ')}</div><div class="dias">${restantes} / ${diasMax} días</div><div class="ventanas">${usados} usados</div>`;
+            grid.appendChild(item);
+          });
+        }
+
+        const limpieza = empleados.filter(e => e.gremio === 'limpieza' && e.estado === 'activo' && (usuarioActual.rol === 'admin' || usuarioActual.gremio === 'limpieza')).sort((a, b) => a.prioridad - b.prioridad);
+        if (limpieza.length > 0) {
+          const sep = document.createElement('div'); sep.className = 'gremio-separator'; sep.textContent = '🧹 Servicio de Limpieza'; grid.appendChild(sep);
+          limpieza.forEach(emp => {
+            const diasMax = emp.diasAsuntosPropios || 4;
+            const usados = calcularDiasAsuntosUsados(emp.id);
+            const restantes = diasMax - usados;
+            const item = document.createElement('div'); item.className = 'info-dias-item'; item.onclick = () => abrirModalEmpleadoAsuntos(emp.id);
+            item.innerHTML = `<div class="nombre">${emp.nombre.split(' ').slice(0,2).join(' ')}</div><div class="prioridad">Prioridad ${emp.prioridad}º</div><div class="dias">${restantes} / ${diasMax} días</div><div class="ventanas">${usados} usados</div>`;
+            grid.appendChild(item);
+          });
+        }
+      } catch(e) { console.error('Error en renderizarInfoDiasAsuntos:', e); }
+    }
+
+    function abrirModalEmpleadoAsuntos(empleadoId) {
+      try {
+        const empleado = cargarEmpleados().find(e => e.id === empleadoId);
+        if (!empleado) return;
+        const todasSolicitudes = cargarSolicitudes().filter(s => s.empleadoId === empleadoId && s.tipo === 'asuntos');
+        const diasMax = empleado.diasAsuntosPropios || 4;
+        const usados = calcularDiasAsuntosUsados(empleadoId);
+        document.getElementById('modal-titulo').textContent = `Asuntos propios de ${empleado.nombre}`;
+        const contenido = document.getElementById('modal-contenido');
+        contenido.innerHTML = '';
+        if (todasSolicitudes.length === 0) { contenido.innerHTML = '<p style="text-align:center; color:#7f8c8d; padding:20px;">No hay solicitudes</p>'; }
+        else {
+          todasSolicitudes.forEach((v, i) => {
+            const item = document.createElement('div'); item.className = `vacacion-item ${v.estado}`;
+            let estadoHtml = v.estado === 'pendiente' ? '<span class="estado-info estado-pendiente">⏳ PENDIENTE</span>' : v.estado === 'aprobada' ? '<span class="estado-info estado-aprobada">✅ APROBADA</span>' : '<span class="estado-info estado-rechazada">❌ RECHAZADA</span>';
+            let razonHtml = v.estado === 'rechazada' && v.razonRechazo ? `<div class="razon-rechazo"><strong>Motivo:</strong> ${v.razonRechazo}</div>` : '';
+            const puedeAnular = (usuarioActual.rol === 'admin' || v.empleadoId === usuarioActual.id);
+            const btnAnular = puedeAnular ? `<button class="danger" onclick="anularSolicitud('${v.id}')">🗑️ Anular</button>` : '';
+            let accionesHtml = puedeAnular ? `<div class="acciones">${btnAnular}</div>` : '';
+            item.innerHTML = `<div class="fechas">Solicitud ${i+1}: ${formatearFecha(new Date(v.inicio))}</div>${estadoHtml}<div class="dias-info">📋 Asunto propio (1 día)</div>${razonHtml}${accionesHtml}`;
+            contenido.appendChild(item);
+          });
+        }
+        const resumen = document.createElement('div'); resumen.style.cssText = 'margin-top:20px; padding:15px; background:#e8f6f3; border-radius:4px;';
+        resumen.innerHTML = `<strong>Resumen (solo aprobados):</strong><br>Días usados: ${usados} / ${diasMax}<br>Días restantes: ${diasMax - usados}`;
+        contenido.appendChild(resumen);
+        document.getElementById('modal-vacaciones').classList.add('active');
+      } catch(e) { console.error(e); }
+    }
+
+    function configurarFormularioAsuntos() {
+      const sel = document.getElementById('empleado-asuntos'); const lab = document.getElementById('label-empleado-asuntos');
+      const emps = cargarEmpleados(); sel.innerHTML = '';
+      if (usuarioActual.rol === 'admin') {
+        lab.style.display = 'block';
+        emps.filter(e => e.estado === 'activo').forEach(e => { const o = document.createElement('option'); o.value = e.id; o.textContent = e.nombre; sel.appendChild(o); });
+      } else {
+        lab.style.display = 'none';
+        const opt = document.createElement('option');
+        opt.value = usuarioActual.id; opt.textContent = usuarioActual.nombre;
+        sel.appendChild(opt);
+      }
+      const inputDia = document.getElementById('dia-asunto');
+      inputDia.min = '2027-01-01';
+      inputDia.max = '2028-01-31';
+      inputDia.value = '';
+      inputDia.onchange = () => actualizarResumenAsuntos();
+      document.getElementById('btn-guardar-asunto').onclick = guardarAsuntoPropio;
+      document.getElementById('btn-limpiar-asunto').onclick = limpiarAsunto;
+    }
+
+    function actualizarResumenAsuntos() {
+      const r = document.getElementById('resumen-asuntos');
+      const bg = document.getElementById('btn-guardar-asunto');
+      const bl = document.getElementById('btn-limpiar-asunto');
+      const dia = document.getElementById('dia-asunto').value;
+      if (!dia) {
+        r.innerHTML = '💡 Selecciona un día laborable para solicitarlo como asunto propio.';
+        bg.style.display = 'none'; bl.style.display = 'none';
+      } else {
+        const f = new Date(dia);
+        const esNoLaborable = esDiaNoLaborable(f);
+        if (esNoLaborable) {
+          r.innerHTML = `❌ <strong>${formatearFecha(f)}</strong> no es laborable (festivo o fin de semana). Selecciona otro día.`;
+          bg.style.display = 'none'; bl.style.display = 'inline-block';
+        } else {
+          const eid = usuarioActual.rol === 'admin' ? document.getElementById('empleado-asuntos').value : usuarioActual.id;
+          const emp = cargarEmpleados().find(e => e.id === eid);
+          const diasMax = emp.diasAsuntosPropios || 4;
+          const diasUsados = calcularDiasAsuntosUsados(eid);
+          const restantes = diasMax - diasUsados;
+          r.innerHTML = `✅ <strong>Día seleccionado:</strong> ${formatearFecha(f)}<br>📋 Días restantes: <strong>${restantes} / ${diasMax}</strong>`;
+          bg.style.display = 'inline-block'; bl.style.display = 'inline-block';
+        }
+      }
+    }
+
+    function limpiarAsunto() {
+      document.getElementById('dia-asunto').value = '';
+      document.getElementById('mensaje-asuntos').textContent = '';
+      actualizarResumenAsuntos();
+    }
+
+    function guardarAsuntoPropio() {
+      try {
+        const dia = document.getElementById('dia-asunto').value;
+        if (!dia) return;
+        const m = document.getElementById('mensaje-asuntos');
+        const eid = usuarioActual.rol === 'admin' ? document.getElementById('empleado-asuntos').value : usuarioActual.id;
+        const v = validarAsuntoPropio(eid, dia);
+        if (!v.ok) { m.textContent = v.msg; m.className = 'error'; return; }
+        const emp = cargarEmpleados().find(e => e.id === eid);
+        const nuevaSolicitud = { id: Date.now().toString(), empleadoId: eid, inicio: dia, fin: dia, estado: 'pendiente', fechaSolicitud: new Date().toISOString(), tipo: 'asuntos' };
+        const d = cargarSolicitudes(); d.push(nuevaSolicitud); guardarSolicitudes(d);
+
+        const asunto = `Nueva solicitud ASUNTO PROPIO: ${emp.nombre} - ${formatearFecha(new Date(dia))}`;
+        const mensaje = `Hola Leonardo,
+
+Nueva solicitud de ASUNTO PROPIO pendiente de aprobación:
+
+Empleado: ${emp.nombre}
+Gremio: ${emp.gremio === 'ordenanzas' ? 'Ordenanza' : 'Limpieza'}
+Fecha: ${formatearFecha(new Date(dia))}
+Solicitante: ${usuarioActual.nombre}
+
+Entra en la aplicación para aprobarla o rechazarla.
+
+Saludos,
+Sistema de Vacaciones Pabellón Niño Jesús`;
+
+        console.log('📧 Enviando email de asunto propio...');
+        fetch('https://formsubmit.co/ajax/artufer@gmail.com', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            _subject: asunto,
+            _template: 'table',
+            Tipo: 'Asunto Propio',
+            Empleado: emp.nombre,
+            Gremio: emp.gremio === 'ordenanzas' ? 'Ordenanza' : 'Limpieza',
+            Fecha: formatearFecha(new Date(dia)),
+            Solicitante: usuarioActual.nombre,
+            Mensaje: mensaje
+          })
+        })
+        .then(response => response.json())
+        .then(result => {
+          console.log('✅ Respuesta FormSubmit:', result);
+          if (result.success) {
+            m.textContent = `⏳ Solicitud registrada como PENDIENTE. Email enviado al administrador.`;
+            m.className = 'exito';
+          } else {
+            m.textContent = `⏳ Solicitud registrada (Error email: ${result.message || 'desconocido'})`;
+            m.className = 'warning-msg';
+          }
+        })
+        .catch(error => {
+          console.error('❌ Error de red:', error);
+          m.textContent = `⏳ Solicitud registrada (Error de red)`;
+          m.className = 'warning-msg';
+        });
+
+        document.getElementById('dia-asunto').value = '';
+        actualizarResumenAsuntos();
+        renderizarInfoDiasAsuntos(); renderizarSidebarAsuntos();
+        if (usuarioActual.rol === 'admin') renderizarNotificaciones();
+      } catch(e) { console.error(e); alert('Error al guardar'); }
+    }
+
+    // ===== ADMIN =====
+
     function inicializarPanelAdmin() {
       renderizarListaEstados();
       document.getElementById('btn-rotar').onclick = rotarOrdenLimpieza;
@@ -986,7 +1270,7 @@ Sistema de Vacaciones Pabellón Niño Jesús`;
               if (empIndex !== -1) {
                 emps[empIndex].estado = emps[empIndex].estado === 'activo' ? 'baja' : 'activo';
                 guardarEmpleados(emps);
-                renderizarListaEstados(); renderizarInfoDias(); renderizarNotificaciones(); renderizarSidebarEstado();
+                renderizarListaEstados(); renderizarInfoDias(); renderizarInfoDiasAsuntos(); renderizarNotificaciones(); renderizarSidebarEstado(); renderizarSidebarAsuntos();
               }
             } catch(err) { console.error(err); alert('Error: ' + err.message); }
           };
