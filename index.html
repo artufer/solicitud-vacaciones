@@ -62,7 +62,6 @@
     .estado-badge.rechazada { background: #e74c3c; color: white; }
     .sin-estado { text-align: center; color: #95a5a6; font-style: italic; padding: 20px; }
     
-    /* Botón de anular */
     .btn-anular {
       position: absolute;
       top: 8px;
@@ -235,7 +234,7 @@
 
     <div class="tabs-container">
       <div class="tabs">
-        <button class="tab hidden" data-tab="admin" id="tab-btn-admin">️ Administración</button>
+        <button class="tab hidden" data-tab="admin" id="tab-btn-admin">⚙️ Administración</button>
         <button class="tab" data-tab="solicitar" id="tab-btn-solicitar">📝 Solicitar vacaciones</button>
         <button class="tab" data-tab="calendario" id="tab-btn-calendario">📅 Calendario</button>
       </div>
@@ -243,15 +242,12 @@
       <div class="tab-content" id="tab-admin">
         <section>
           <h2>⚙️ Panel de Administración</h2>
-          
           <div class="notificaciones-panel">
-            <h3> Solicitudes pendientes <span class="badge-notif" id="badge-notif">0</span></h3>
+            <h3>🔔 Solicitudes pendientes <span class="badge-notif" id="badge-notif">0</span></h3>
             <div id="lista-notificaciones"></div>
           </div>
-
           <h3>Estado de empleados</h3>
           <div id="lista-estados"></div>
-          
           <h3>Rotación anual (limpieza)</h3>
           <button id="btn-rotar">Avanzar orden para el próximo año</button>
         </section>
@@ -261,40 +257,27 @@
         <div class="solicitar-container">
           <div class="estado-sidebar">
             <h3>📋 Estado de solicitudes</h3>
-            <div id="sidebar-estado">
-              <div class="sin-estado">No hay solicitudes</div>
-            </div>
+            <div id="sidebar-estado"><div class="sin-estado">No hay solicitudes</div></div>
           </div>
-
           <section>
             <h2>Solicitar vacaciones</h2>
             <div id="info-turno"></div>
             <label id="label-empleado">Empleado: <select id="empleado"></select></label>
-
             <div class="info-dias" id="info-dias">
               <h4>📊 Días disponibles y ventanas usadas (clic para ver/editar)</h4>
               <div class="info-dias-subtitulo" id="info-dias-subtitulo"></div>
               <div class="info-dias-grid" id="info-dias-grid"></div>
             </div>
-
-            <div class="selector-mes">
-              <label>Mes: <select id="selector-mes"></select></label>
-            </div>
-
+            <div class="selector-mes"><label>Mes: <select id="selector-mes"></select></label></div>
             <div class="calendario-selector">
               <div class="calendario-titulo" id="titulo-mes"></div>
               <div class="calendario-grid" id="calendario-grid"></div>
             </div>
-
-            <div class="resumen-seleccion" id="resumen-seleccion">
-              💡 Haz clic en el <strong>día de inicio</strong> y luego en el <strong>día de fin</strong> (mínimo 7 días naturales incluyendo fines de semana y festivos).
-            </div>
-
+            <div class="resumen-seleccion" id="resumen-seleccion">💡 Haz clic en el <strong>día de inicio</strong> y luego en el <strong>día de fin</strong> (mínimo 7 días naturales incluyendo fines de semana y festivos).</div>
             <div class="botones-accion">
               <button id="btn-guardar" style="display:none;">✅ Solicitar vacaciones</button>
               <button id="btn-limpiar" class="secondary" style="display:none;">🗑️ Limpiar selección</button>
             </div>
-
             <p id="mensaje"></p>
           </section>
         </div>
@@ -367,25 +350,11 @@
     const nombresMes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
     function cargarEmpleados() { 
-      try {
-        const g = localStorage.getItem('empleados'); 
-        return g ? JSON.parse(g) : JSON.parse(JSON.stringify(CONFIG.empleados));
-      } catch(e) {
-        return JSON.parse(JSON.stringify(CONFIG.empleados));
-      }
+      try { const g = localStorage.getItem('empleados'); return g ? JSON.parse(g) : JSON.parse(JSON.stringify(CONFIG.empleados)); } catch(e) { return JSON.parse(JSON.stringify(CONFIG.empleados)); }
     }
-    
-    function guardarEmpleados(e) { 
-      try { localStorage.setItem('empleados', JSON.stringify(e)); } catch(err) { console.error(err); }
-    }
-    
-    function cargarSolicitudes() { 
-      try { return JSON.parse(localStorage.getItem('vacaciones') || '[]'); } catch(e) { return []; }
-    }
-    
-    function guardarSolicitudes(d) { 
-      try { localStorage.setItem('vacaciones', JSON.stringify(d)); } catch(err) { console.error(err); }
-    }
+    function guardarEmpleados(e) { try { localStorage.setItem('empleados', JSON.stringify(e)); } catch(err) { console.error(err); } }
+    function cargarSolicitudes() { try { return JSON.parse(localStorage.getItem('vacaciones') || '[]'); } catch(e) { return []; } }
+    function guardarSolicitudes(d) { try { localStorage.setItem('vacaciones', JSON.stringify(d)); } catch(err) { console.error(err); } }
 
     function esDiaNoLaborable(fecha) {
       const fs = fecha.toISOString().split('T')[0];
@@ -455,7 +424,7 @@
         const empleados = cargarEmpleados();
         const empleado = empleados.find(e => e.id === empleadoId);
         if (!empleado) return { ok: false, msg: 'Empleado no reconocido' };
-        if (empleado.estado === 'baja') return { ok: false, msg: ` ${empleado.nombre} está de baja.` };
+        if (empleado.estado === 'baja') return { ok: false, msg: `❌ ${empleado.nombre} está de baja.` };
         if (inicio < CONFIG.periodoVacaciones.inicio || fin > CONFIG.periodoVacaciones.fin) return { ok: false, msg: '❌ Fuera del periodo de vacaciones' };
         const diasN = calcularDiasNaturales(inicio, fin);
         if (diasN < CONFIG.minimoDiasNaturales) return { ok: false, msg: `❌ Mínimo ${CONFIG.minimoDiasNaturales} días naturales` };
@@ -543,7 +512,7 @@
     function actualizarInterfaz() {
       if (!usuarioActual) return;
       const subtitulo = document.getElementById('subtitulo-gremio');
-      if (usuarioActual.rol === 'admin') subtitulo.textContent = ' Ordenanzas y Servicio de Limpieza';
+      if (usuarioActual.rol === 'admin') subtitulo.textContent = '👥 Ordenanzas y Servicio de Limpieza';
       else if (usuarioActual.gremio === 'ordenanzas') subtitulo.textContent = '👥 Ordenanzas';
       else subtitulo.textContent = '🧹 Servicio de Limpieza';
 
@@ -582,25 +551,21 @@
           let estadoTexto = s.estado === 'pendiente' ? '⏳ Pendiente' : s.estado === 'aprobada' ? '✅ Aprobada' : '❌ Rechazada';
           let razonHtml = '';
           if (s.estado === 'rechazada' && s.razonRechazo) razonHtml = `<div style="margin-top:6px; padding:6px; background:#fadbd8; border-radius:4px; font-size:11px; color:#c0392b;"><strong>Motivo:</strong> ${s.razonRechazo}</div>`;
-          
-          // ✅ Botón de anular para TODOS (incluso si está aprobada)
           const puedeAnular = (usuarioActual.rol === 'admin' || s.empleadoId === usuarioActual.id);
-          const btnAnular = puedeAnular ? `<button class="btn-anular" onclick="anularSolicitud('${s.id}', '${emp.id}')">🗑️ Anular</button>` : '';
-          
+          const btnAnular = puedeAnular ? `<button class="btn-anular" onclick="anularSolicitud('${s.id}')">🗑️ Anular</button>` : '';
           item.innerHTML = `<div class="titulo">${emp.nombre.split(' ').slice(0,2).join(' ')}</div><div class="fechas">${formatearFecha(new Date(s.inicio))} - ${formatearFecha(new Date(s.fin))}</div><div class="fechas">${diasHabiles} días hábiles | ${diasNaturales} naturales</div><span class="estado-badge ${s.estado}">${estadoTexto}</span>${razonHtml}${btnAnular}`;
           cont.appendChild(item);
         });
       } catch(e) { console.error('Error en renderizarSidebarEstado:', e); }
     }
 
-    // ✅ NUEVA FUNCIÓN: Anular solicitud (cualquier estado)
-    function anularSolicitud(sid, eid) {
+    function anularSolicitud(sid) {
       if (!confirm('¿Estás seguro de anular esta solicitud? Esta acción no se puede deshacer.')) return;
       try {
         const sol = cargarSolicitudes();
         const idx = sol.findIndex(s => s.id === sid);
         if (idx !== -1) {
-          sol.splice(idx, 1); // Eliminar completamente
+          sol.splice(idx, 1);
           guardarSolicitudes(sol);
           renderizarSidebarEstado();
           renderizarInfoDias();
@@ -673,7 +638,7 @@
 
         const ordenanzas = empleados.filter(e => e.gremio === 'ordenanzas' && e.estado === 'activo' && (usuarioActual.rol === 'admin' || usuarioActual.gremio === 'ordenanzas')).sort((a, b) => a.nombre.localeCompare(b.nombre));
         if (ordenanzas.length > 0) {
-          const sep = document.createElement('div'); sep.className = 'gremio-separator'; sep.textContent = ' Ordenanzas'; grid.appendChild(sep);
+          const sep = document.createElement('div'); sep.className = 'gremio-separator'; sep.textContent = '👥 Ordenanzas'; grid.appendChild(sep);
           ordenanzas.forEach(emp => {
             const usados = calcularDiasUsados(emp.id);
             const item = document.createElement('div'); item.className = 'info-dias-item'; item.onclick = () => abrirModalEmpleado(emp.id);
@@ -684,7 +649,7 @@
 
         const limpieza = empleados.filter(e => e.gremio === 'limpieza' && e.estado === 'activo' && (usuarioActual.rol === 'admin' || usuarioActual.gremio === 'limpieza')).sort((a, b) => a.prioridad - b.prioridad);
         if (limpieza.length > 0) {
-          const sep = document.createElement('div'); sep.className = 'gremio-separator'; sep.textContent = ' Servicio de Limpieza'; grid.appendChild(sep);
+          const sep = document.createElement('div'); sep.className = 'gremio-separator'; sep.textContent = '🧹 Servicio de Limpieza'; grid.appendChild(sep);
           limpieza.forEach(emp => {
             const usados = calcularDiasUsados(emp.id);
             const esTurnoActual = turnoActual && emp.id === turnoActual.id;
@@ -712,18 +677,14 @@
             const item = document.createElement('div'); item.className = `vacacion-item ${v.estado}`;
             let estadoHtml = v.estado === 'pendiente' ? '<span class="estado-info estado-pendiente">⏳ PENDIENTE</span>' : v.estado === 'aprobada' ? '<span class="estado-info estado-aprobada">✅ APROBADA</span>' : '<span class="estado-info estado-rechazada">❌ RECHAZADA</span>';
             let razonHtml = v.estado === 'rechazada' && v.razonRechazo ? `<div class="razon-rechazo"><strong>Motivo:</strong> ${v.razonRechazo}</div>` : '';
-            
-            // ✅ Botón de anular para admin o propietario (cualquier estado)
             const puedeAnular = (usuarioActual.rol === 'admin' || v.empleadoId === usuarioActual.id);
-            const btnAnular = puedeAnular ? `<button class="danger" onclick="anularSolicitud('${v.id}', '${empleadoId}')">🗑️ Anular</button>` : '';
-            
+            const btnAnular = puedeAnular ? `<button class="danger" onclick="anularSolicitud('${v.id}')">🗑️ Anular</button>` : '';
             let accionesHtml = '';
             if (v.estado === 'pendiente' && puedeAnular) {
               accionesHtml = `<div class="acciones"><button class="warning" onclick="editarVentana('${v.id}', '${empleadoId}')">✏️ Editar</button>${btnAnular}</div>`;
             } else if (puedeAnular) {
               accionesHtml = `<div class="acciones">${btnAnular}</div>`;
             }
-            
             item.innerHTML = `<div class="fechas">Solicitud ${i+1}: ${formatearFecha(new Date(v.inicio))} - ${formatearFecha(new Date(v.fin))}</div>${estadoHtml}<div class="dias-info">💼 ${calcularDiasHabiles(v.inicio, v.fin)} días hábiles | 📅 ${calcularDiasNaturales(v.inicio, v.fin)} días naturales</div>${razonHtml}${accionesHtml}`;
             contenido.appendChild(item);
           });
@@ -755,15 +716,6 @@
         const sol = cargarSolicitudes(); const idx = sol.findIndex(s => s.id === vid);
         if (idx !== -1) { sol[idx].inicio = ni; sol[idx].fin = nf; guardarSolicitudes(sol); abrirModalEmpleado(eid); renderizarInfoDias(); renderizarCalendario4x3(); renderizarSidebarEstado(); if (usuarioActual.rol === 'admin') renderizarNotificaciones(); }
       } catch(e) { console.error(e); alert('Error'); }
-    }
-
-    function eliminarVentana(vid, eid) {
-      try {
-        if (!confirm('¿Eliminar?')) return;
-        guardarSolicitudes(cargarSolicitudes().filter(s => s.id !== vid));
-        abrirModalEmpleado(eid); renderizarInfoDias(); renderizarCalendario4x3(); renderizarSidebarEstado();
-        if (usuarioActual.rol === 'admin') renderizarNotificaciones();
-      } catch(e) { console.error(e); }
     }
 
     function renderizarCalendario4x3() {
@@ -884,7 +836,7 @@
 
     function actualizarResumen() {
       const r = document.getElementById('resumen-seleccion'); const bg = document.getElementById('btn-guardar'); const bl = document.getElementById('btn-limpiar');
-      if (!diaInicio) { r.innerHTML = ' Haz clic en el <strong>día de inicio</strong> y luego en el <strong>día de fin</strong> (mínimo 7 días naturales).'; bg.style.display = 'none'; bl.style.display = 'none'; }
+      if (!diaInicio) { r.innerHTML = '💡 Haz clic en el <strong>día de inicio</strong> y luego en el <strong>día de fin</strong> (mínimo 7 días naturales).'; bg.style.display = 'none'; bl.style.display = 'none'; }
       else if (!diaFin) { r.innerHTML = `📅 <strong>Inicio:</strong> ${formatearFecha(diaInicio)} <span style="color:#f39c12;">(seleccionado)</span><br>💡 Cambia de mes si es necesario y haz clic en el <strong>día de fin</strong>.`; bg.style.display = 'none'; bl.style.display = 'inline-block'; }
       else {
         const diasN = calcularDiasNaturales(diaInicio, diaFin), diasH = calcularDiasHabiles(diaInicio, diaFin);
@@ -928,18 +880,17 @@
         console.log('📧 Enviando email...', templateParams);
 
         if (typeof emailjs === 'undefined') {
-          m.textContent = ` Solicitud registrada (EmailJS no cargado)`;
+          m.textContent = `⏳ Solicitud registrada (EmailJS no cargado)`;
           m.className = 'warning-msg';
         } else {
-          // ✅ CORREGIDO: service_exzuwwi (NO service_m8s780p)
- emailjs.send('service_exzuwwi', 'template_3enelwg', templateParams)
+          emailjs.send('service_oyu236o', 'zfp0hyl', templateParams)
             .then(function(response) {
               console.log('✅ Email enviado:', response.status, response.text);
               m.textContent = `⏳ Solicitud registrada como PENDIENTE. Email enviado al administrador.`;
-              m.className = 'warning-msg';
+              m.className = 'exito';
             }, function(error) {
               console.error('❌ Error EmailJS:', error);
-              m.textContent = ` Solicitud registrada (Error email: ${error.text || 'desconocido'})`;
+              m.textContent = `⏳ Solicitud registrada (Error email: ${error.text || 'desconocido'})`;
               m.className = 'warning-msg';
             });
         }
