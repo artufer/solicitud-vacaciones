@@ -5,10 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vacaciones Pabellón Niño Jesús</title>
   
-  <!-- EmailJS SDK v3 -->
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <!-- EmailJS SDK v3 (última versión) -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script>
-    emailjs.init("HhTaoxZGy2zC2YXSI");
+    (function() {
+      emailjs.init({ publicKey: "HhTaoxZGy2zC2YXSI" });
+    })();
   </script>
 
   <style>
@@ -43,8 +45,6 @@
     .tab-content { display: none; background: white; padding: 20px; border-radius: 0 0 8px 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
     .tab-content.active { display: block; }
 
-    main { max-width: 1400px; margin: 0 auto; padding: 0 20px 20px 20px; }
-    
     .solicitar-container { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
     .estado-sidebar { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: fit-content; position: sticky; top: 20px; }
     .estado-sidebar h3 { color: #2c3e50; margin-bottom: 15px; font-size: 16px; border-bottom: 2px solid #3498db; padding-bottom: 8px; }
