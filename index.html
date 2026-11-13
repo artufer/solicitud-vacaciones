@@ -362,32 +362,45 @@
     let diaFin = null;
     const nombresMes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
+    // ✅ FUNCIÓN ACTUALIZADA: Fusiona con CONFIG para mantener diasAsuntosPropios
     function cargarEmpleados() { 
-  try { 
-    const g = localStorage.getItem('empleados'); 
-    const empleadosGuardados = g ? JSON.parse(g) : [];
-    
-    // ✅ Fusionar con CONFIG para asegurar que todos los campos existan
-    const empleadosActualizados = CONFIG.empleados.map(empConfig => {
-      const empGuardado = empleadosGuardados.find(e => e.id === empConfig.id);
-      if (empGuardado) {
-        // Mantener el estado y datos guardados, pero actualizar diasAsuntosPropios
-        return {
-          ...empConfig,
-          ...empGuardado,
-          diasAsuntosPropios: empConfig.diasAsuntosPropios,
-          diasDisponibles: empConfig.diasDisponibles
-        };
+      try { 
+        const g = localStorage.getItem('empleados'); 
+        const empleadosGuardados = g ? JSON.parse(g) : [];
+        
+        const empleadosActualizados = CONFIG.empleados.map(empConfig => {
+          const empGuardado = empleadosGuardados.find(e => e.id === empConfig.id);
+          if (empGuardado) {
+            return {
+              ...empConfig,
+              ...empGuardado,
+              diasAsuntosPropios: empConfig.diasAsuntosPropios,
+              diasDisponibles: empConfig.diasDisponibles
+            };
+          }
+          return { ...empConfig };
+        });
+        
+        guardarEmpleados(empleadosActualizados);
+        return empleadosActualizados;
+      } catch(e) { 
+        return JSON.parse(JSON.stringify(CONFIG.empleados)); 
       }
-      return { ...empConfig };
-    });
+    }
     
-    guardarEmpleados(empleadosActualizados);
-    return empleadosActualizados;
-  } catch(e) { 
-    return JSON.parse(JSON.stringify(CONFIG.empleados)); 
-  }
-}
+    function guardarEmpleados(e) { try { localStorage.setItem('empleados', JSON.stringify(e)); } catch(err) { console.error(err); } }
+    
+    // ✅ FUNCIÓN RESTAURADA (era la que faltaba)
+    function cargarSolicitudes() { try { return JSON.parse(localStorage.getItem('vacaciones') || '[]'); } catch(e) { return []; } }
+    function guardarSolicitudes(d) { try { localStorage.setItem('vacaciones', JSON.stringify(d)); } catch(err) { console.error(err); } }
+
+    function esDiaNoLaborable(fecha) {
+      const fs = fecha.toISOString().split('T')[0];
+      const ds = fecha.getDay();
+      if (ds === 0 || ds === 6) return true;
+      if (FESTIVOS_2027.includes(fs)) return true;
+      return false;
+    }
 
     function calcularDiasHabiles(inicio, fin) {
       try {
@@ -1066,46 +1079,48 @@ Sistema de Vacaciones Pabellón Niño Jesús`;
       } catch(e) { console.error('Error en renderizarSidebarAsuntos:', e); }
     }
 
-function renderizarInfoDiasAsuntos() {
-  try {
-    const grid = document.getElementById('info-dias-grid-asuntos');
-    const subtitulo = document.getElementById('info-dias-subtitulo-asuntos');
-    if (!grid || !subtitulo) return;
-    grid.innerHTML = '';
-    const empleados = cargarEmpleados();
-    subtitulo.innerHTML = '';  // ✅ Quita el subtítulo
+    // ✅ FUNCIÓN ACTUALIZADA: Filtra por empleado (no admin ve solo el suyo)
+    function renderizarInfoDiasAsuntos() {
+      try {
+        const grid = document.getElementById('info-dias-grid-asuntos');
+        const subtitulo = document.getElementById('info-dias-subtitulo-asuntos');
+        if (!grid || !subtitulo) return;
+        grid.innerHTML = '';
+        const empleados = cargarEmpleados();
+        subtitulo.innerHTML = '';  // ✅ Sin subtítulo
 
-    // ✅ Si es admin, muestra todos. Si es empleado, solo el suyo.
-    let empleadosAMostrar;
-    if (usuarioActual.rol === 'admin') {
-      const ordenanzas = empleados.filter(e => e.gremio === 'ordenanzas' && e.estado === 'activo').sort((a, b) => a.nombre.localeCompare(b.nombre));
-      const limpieza = empleados.filter(e => e.gremio === 'limpieza' && e.estado === 'activo').sort((a, b) => a.prioridad - b.prioridad);
-      empleadosAMostrar = [...ordenanzas, ...limpieza];
-    } else {
-      empleadosAMostrar = empleados.filter(e => e.id === usuarioActual.id && e.estado === 'activo');
+        // ✅ Filtrar: admin ve todos, empleado solo el suyo
+        let empleadosAMostrar;
+        if (usuarioActual.rol === 'admin') {
+          const ordenanzas = empleados.filter(e => e.gremio === 'ordenanzas' && e.estado === 'activo').sort((a, b) => a.nombre.localeCompare(b.nombre));
+          const limpieza = empleados.filter(e => e.gremio === 'limpieza' && e.estado === 'activo').sort((a, b) => a.prioridad - b.prioridad);
+          empleadosAMostrar = [...ordenanzas, ...limpieza];
+        } else {
+          empleadosAMostrar = empleados.filter(e => e.id === usuarioActual.id && e.estado === 'activo');
+        }
+
+        if (empleadosAMostrar.length === 0) {
+          grid.innerHTML = '<div class="sin-estado">No hay empleados disponibles</div>';
+          return;
+        }
+
+        empleadosAMostrar.forEach(emp => {
+          const diasMax = emp.diasAsuntosPropios || 4;
+          const usados = calcularDiasAsuntosUsados(emp.id);
+          const restantes = diasMax - usados;
+          const item = document.createElement('div'); 
+          item.className = 'info-dias-item'; 
+          item.onclick = () => abrirModalEmpleadoAsuntos(emp.id);
+          item.innerHTML = `
+            <div class="nombre">${emp.nombre.split(' ').slice(0,2).join(' ')}</div>
+            <div class="dias">${restantes} / ${diasMax} días</div>
+            <div class="ventanas">${usados} usados</div>
+          `;
+          grid.appendChild(item);
+        });
+      } catch(e) { console.error('Error en renderizarInfoDiasAsuntos:', e); }
     }
 
-    if (empleadosAMostrar.length === 0) {
-      grid.innerHTML = '<div class="sin-estado">No hay empleados disponibles</div>';
-      return;
-    }
-
-    empleadosAMostrar.forEach(emp => {
-      const diasMax = emp.diasAsuntosPropios || 4;
-      const usados = calcularDiasAsuntosUsados(emp.id);
-      const restantes = diasMax - usados;
-      const item = document.createElement('div'); 
-      item.className = 'info-dias-item'; 
-      item.onclick = () => abrirModalEmpleadoAsuntos(emp.id);
-      item.innerHTML = `
-        <div class="nombre">${emp.nombre.split(' ').slice(0,2).join(' ')}</div>
-        <div class="dias">${restantes} / ${diasMax} días</div>
-        <div class="ventanas">${usados} usados</div>
-      `;
-      grid.appendChild(item);
-    });
-  } catch(e) { console.error('Error en renderizarInfoDiasAsuntos:', e); }
-}
     function abrirModalEmpleadoAsuntos(empleadoId) {
       try {
         const empleado = cargarEmpleados().find(e => e.id === empleadoId);
