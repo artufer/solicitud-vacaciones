@@ -4,14 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vacaciones Pabellón Niño Jesús</title>
-  
-  <!-- EmailJS SDK v3 (última versión) -->
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-  <script>
-    (function() {
-      emailjs.init({ publicKey: "HhTaoxZGy2zC2YXSI" });
-    })();
-  </script>
 
   <style>
     * { box-sizing: border-box; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
@@ -63,18 +55,8 @@
     .sin-estado { text-align: center; color: #95a5a6; font-style: italic; padding: 20px; }
     
     .btn-anular {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: #e74c3c;
-      color: white;
-      border: none;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 11px;
-      cursor: pointer;
-      opacity: 0.8;
-      transition: opacity 0.2s;
+      position: absolute; top: 8px; right: 8px; background: #e74c3c; color: white; border: none;
+      padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; opacity: 0.8; transition: opacity 0.2s;
     }
     .btn-anular:hover { opacity: 1; }
 
@@ -866,34 +848,58 @@
         const nuevaSolicitud = { id: Date.now().toString(), empleadoId: eid, inicio: ini, fin, estado: 'pendiente', fechaSolicitud: new Date().toISOString() };
         const d = cargarSolicitudes(); d.push(nuevaSolicitud); guardarSolicitudes(d);
 
-        const templateParams = {
-          to_email: "artufer@gmail.com",
-          empleado_nombre: emp.nombre,
-          empleado_gremio: emp.gremio === 'ordenanzas' ? 'Ordenanza' : 'Limpieza',
-          fecha_inicio: formatearFecha(diaInicio),
-          fecha_fin: formatearFecha(diaFin),
-          dias_habiles: diasHabiles,
-          dias_naturales: diasNaturales,
-          solicitante: usuarioActual.nombre
-        };
+        const asunto = `Nueva solicitud: ${emp.nombre} - ${formatearFecha(diaInicio)} al ${formatearFecha(diaFin)}`;
+        const mensaje = `Hola Leonardo,
 
-        console.log('📧 Enviando email...', templateParams);
+Nueva solicitud de vacaciones pendiente de aprobación:
 
-        if (typeof emailjs === 'undefined') {
-          m.textContent = `⏳ Solicitud registrada (EmailJS no cargado)`;
+Empleado: ${emp.nombre}
+Gremio: ${emp.gremio === 'ordenanzas' ? 'Ordenanza' : 'Limpieza'}
+Fechas: Del ${formatearFecha(diaInicio)} al ${formatearFecha(diaFin)}
+Días hábiles: ${diasHabiles}
+Días naturales: ${diasNaturales}
+Solicitante: ${usuarioActual.nombre}
+
+Entra en la aplicación para aprobarla o rechazarla.
+
+Saludos,
+Sistema de Vacaciones Pabellón Niño Jesús`;
+
+        console.log('📧 Enviando email con FormSubmit...');
+
+        // ✅ ENVÍO CON FORMSUBMIT (sin Public Key, sin SDK)
+        fetch('https://formsubmit.co/ajax/artufer@gmail.com', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            _subject: asunto,
+            _template: 'table',
+            Empleado: emp.nombre,
+            Gremio: emp.gremio === 'ordenanzas' ? 'Ordenanza' : 'Limpieza',
+            'Fecha inicio': formatearFecha(diaInicio),
+            'Fecha fin': formatearFecha(diaFin),
+            'Días hábiles': diasHabiles,
+            'Días naturales': diasNaturales,
+            Solicitante: usuarioActual.nombre,
+            Mensaje: mensaje
+          })
+        })
+        .then(response => response.json())
+        .then(result => {
+          console.log('✅ Respuesta FormSubmit:', result);
+          if (result.success) {
+            m.textContent = `⏳ Solicitud registrada como PENDIENTE. Email enviado al administrador.`;
+            m.className = 'exito';
+          } else {
+            m.textContent = `⏳ Solicitud registrada (Error email: ${result.message || 'desconocido'})`;
+            m.className = 'warning-msg';
+          }
+        })
+        .catch(error => {
+          console.error('❌ Error de red:', error);
+          m.textContent = `⏳ Solicitud registrada (Error de red)`;
           m.className = 'warning-msg';
-        } else {
-          emailjs.send('service_oyu236o', 'template_omx4fns', templateParams)
-            .then(function(response) {
-              console.log('✅ Email enviado:', response.status, response.text);
-              m.textContent = `⏳ Solicitud registrada como PENDIENTE. Email enviado al administrador.`;
-              m.className = 'exito';
-            }, function(error) {
-              console.error('❌ Error EmailJS:', error);
-              m.textContent = `⏳ Solicitud registrada (Error email: ${error.text || 'desconocido'})`;
-              m.className = 'warning-msg';
-            });
-        }
+        });
 
         diaInicio = null; diaFin = null;
         renderizarCalendarioInteractivo(); actualizarResumen();
